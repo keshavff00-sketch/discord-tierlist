@@ -2,14 +2,15 @@
 // DIFUSED TIERS — /result command.
 // Lets a tester post a player's test-result card (rank before,
 // rank earned, gamemode, tester) to a single dedicated channel,
-// styled after the reference "FireFury_99's Test Results" embed.
+// with 3D skin render for premium accounts and Steve skin for cracked.
 // ============================================================
 
 const { SlashCommandBuilder } = require("discord.js");
 const { GAMEMODE_KEYS, gamemodeByKey, LOW_TIERS, RESULT_CHANNEL_ID } = require("../config");
 const { isTester } = require("../database");
 const { lookupUUID } = require("../utils/mojang");
-const { testResultEmbed } = require("../utils/embeds");
+const { testResultEmbedWith3DSkin } = require("../utils/embeds");
+const { render3DSkin } = require("../utils/skinRender");
 
 // /result only covers LT3 and below (worse tiers) — HT3 and better go
 // through /high-result instead. "Unranked" is offered alongside the
@@ -75,11 +76,11 @@ module.exports = {
 
     await interaction.deferReply({ ephemeral: true });
 
-    // Best-effort head render for the embed thumbnail — a bad/unknown
-    // username shouldn't block posting the result.
+    // Lookup username to detect premium vs cracked
     const lookup = await lookupUUID(mcUsername).catch(() => null);
     const playerName = lookup?.ign || mcUsername;
     const uuid = lookup?.uuid || null;
+    const isCracked = lookup?.cracked || false;
 
     let channel;
     try {
@@ -96,17 +97,39 @@ module.exports = {
       });
     }
 
-    const embed = testResultEmbed({
+    // Render 3D skin (premium shows actual skin, cracked shows Steve)
+    let skinBuffer = null;
+    try {
+      skinBuffer = await render3DSkin(uuid, isCracked);
+    } catch (err) {
+      console.warn("Failed to render 3D skin:", err);
+      // Don't fail the whole command, just skip the skin
+    }
+
+    // Build embed with skin data
+    const embedData = {
       playerName,
       uuid,
       testerId: interaction.user.id,
       gamemodeLabel: gamemode ? `${gamemode.emoji} ${gamemode.name}` : gamemodeKey,
       rankBefore,
       rankEarned,
-    });
+      cracked: isCracked,
+    };
+
+    let messagePayload;
+    if (skinBuffer) {
+      const { embed, file } = testResultEmbedWith3DSkin(embedData, skinBuffer);
+      messagePayload = { content: `<@${target.id}>`, embeds: [embed], files: [file] };
+    } else {
+      // Fallback if skin rendering failed
+      const { testResultEmbed } = require("../utils/embeds");
+      const embed = testResultEmbed(embedData);
+      messagePayload = { content: `<@${target.id}>`, embeds: [embed] };
+    }
 
     try {
-      await channel.send({ content: `<@${target.id}>`, embeds: [embed] });
+      await channel.send(messagePayload);
     } catch (err) {
       console.error("Failed to post test result:", err);
       return interaction.editReply({
@@ -117,3 +140,4 @@ module.exports = {
     await interaction.editReply({ content: `✅ Result posted in <#${RESULT_CHANNEL_ID}>.` });
   },
 };
+

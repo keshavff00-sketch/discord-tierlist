@@ -39,10 +39,11 @@ function profileEmbed(player) {
 }
 
 // Posted by /result to the RESULT_CHANNEL_ID channel when a tester
-// finishes testing a player.
+// finishes testing a player. Now includes 3D skin render for premium
+// accounts (top-right) and Steve skin for cracked accounts.
 const RESULT_EMBED_COLOR = 0xf5c518; // gold
 
-function testResultEmbed({ playerName, uuid, testerId, gamemodeLabel, rankBefore, rankEarned }) {
+function testResultEmbed({ playerName, uuid, testerId, gamemodeLabel, rankBefore, rankEarned, cracked = false }) {
   const embed = new EmbedBuilder()
     .setColor(RESULT_EMBED_COLOR)
     .setTitle(`${playerName}'s Test Results 🏆`)
@@ -51,7 +52,8 @@ function testResultEmbed({ playerName, uuid, testerId, gamemodeLabel, rankBefore
       { name: "Tester Name:", value: `<@${testerId}>` },
       { name: "Rank Before:", value: rankBefore },
       { name: "Rank Earned:", value: rankEarned },
-      { name: "Game Mode:", value: gamemodeLabel }
+      { name: "Game Mode:", value: gamemodeLabel },
+      { name: "Account Type:", value: cracked ? "🔓 Cracked" : "✅ Premium", inline: true }
     )
     .setFooter({ text: BRAND })
     .setTimestamp();
@@ -59,6 +61,18 @@ function testResultEmbed({ playerName, uuid, testerId, gamemodeLabel, rankBefore
   if (uuid) embed.setThumbnail(headUrl(uuid));
 
   return embed;
+}
+
+// Version of testResultEmbed that attaches a 3D skin render image.
+// The skinBuffer should be a PNG Buffer from render3DSkin().
+function testResultEmbedWith3DSkin({ playerName, uuid, testerId, gamemodeLabel, rankBefore, rankEarned, cracked = false }, skinBuffer) {
+  const embed = testResultEmbed({ playerName, uuid, testerId, gamemodeLabel, rankBefore, rankEarned, cracked });
+  
+  // Attach the 3D skin render as a file and set it as the thumbnail
+  embed.setImage("attachment://skin3d.png");
+  
+  // Return both embed and file for the caller to send
+  return { embed, file: { attachment: skinBuffer, name: "skin3d.png" } };
 }
 
 function overallLeaderboardEmbed(entries) {
@@ -283,6 +297,7 @@ function applicationPanelEmbed() {
 module.exports = {
   profileEmbed,
   testResultEmbed,
+  testResultEmbedWith3DSkin,
   overallLeaderboardEmbed,
   gamemodeLeaderboardEmbed,
   gamemodesListEmbed,
@@ -293,3 +308,4 @@ module.exports = {
   ticketEmbed,
   applicationPanelEmbed,
 };
+
