@@ -1,8 +1,7 @@
 // ============================================================
 // DIFUSED TIERS — /result command.
 // Lets a tester post a player's test-result card (rank before,
-// rank earned, gamemode, tester) to a single dedicated channel,
-// styled after the reference "FireFury_99's Test Results" embed.
+// rank earned, gamemode, tester) to a single dedicated channel.
 // ============================================================
 
 const { SlashCommandBuilder } = require("discord.js");
@@ -15,6 +14,14 @@ const { testResultEmbed } = require("../utils/embeds");
 // through /high-result instead. "Unranked" is offered alongside the
 // real tiers for players being tested for the very first time.
 const RANK_BEFORE_CHOICES = [{ name: "Unranked (first test)", value: "UNRANKED" }, ...LOW_TIERS.map((t) => ({ name: t, value: t }))];
+
+// Steve's UUID (default cracked account skin)
+const STEVE_UUID = "8667ba71b85a4004af54457a9734eed7";
+
+function getSkinUrl(uuid, cracked = false) {
+  const skinUuid = cracked ? STEVE_UUID : uuid;
+  return `https://crafatar.com/renders/body/${skinUuid}?scale=4`;
+}
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -80,6 +87,7 @@ module.exports = {
     const lookup = await lookupUUID(mcUsername).catch(() => null);
     const playerName = lookup?.ign || mcUsername;
     const uuid = lookup?.uuid || null;
+    const isCracked = lookup?.cracked || false;
 
     let channel;
     try {
@@ -103,7 +111,14 @@ module.exports = {
       gamemodeLabel: gamemode ? `${gamemode.emoji} ${gamemode.name}` : gamemodeKey,
       rankBefore,
       rankEarned,
+      cracked: isCracked,
     });
+
+    // Add full-body skin render as image
+    if (uuid) {
+      const skinUrl = getSkinUrl(uuid, isCracked);
+      embed.setImage(skinUrl);
+    }
 
     try {
       await channel.send({ content: `<@${target.id}>`, embeds: [embed] });
@@ -117,3 +132,4 @@ module.exports = {
     await interaction.editReply({ content: `✅ Result posted in <#${RESULT_CHANNEL_ID}>.` });
   },
 };
+
