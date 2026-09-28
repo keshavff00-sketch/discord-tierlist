@@ -2,7 +2,7 @@
 // DIFUSED TIERS — /result command.
 // Lets a tester post a player's test-result card (rank before,
 // rank earned, gamemode, tester) to a single dedicated channel,
-// styled after the reference "FireFury_99's Test Results" embed.
+// with premium/cracked account detection and skin attachment.
 // ============================================================
 
 const { SlashCommandBuilder } = require("discord.js");
@@ -10,6 +10,7 @@ const { GAMEMODE_KEYS, gamemodeByKey, LOW_TIERS, RESULT_CHANNEL_ID } = require("
 const { isTester } = require("../database");
 const { lookupUUID } = require("../utils/mojang");
 const { testResultEmbed } = require("../utils/embeds");
+const { getSkinImage } = require("../utils/skinRender");
 
 // /result only covers LT3 and below (worse tiers) — HT3 and better go
 // through /high-result instead. "Unranked" is offered alongside the
@@ -75,11 +76,11 @@ module.exports = {
 
     await interaction.deferReply({ ephemeral: true });
 
-    // Best-effort head render for the embed thumbnail — a bad/unknown
-    // username shouldn't block posting the result.
+    // Lookup username to detect premium vs cracked
     const lookup = await lookupUUID(mcUsername).catch(() => null);
     const playerName = lookup?.ign || mcUsername;
     const uuid = lookup?.uuid || null;
+    const isCracked = lookup?.cracked || false;
 
     let channel;
     try {
@@ -96,17 +97,46 @@ module.exports = {
       });
     }
 
-    const embed = testResultEmbed({
+    const embedData = {
       playerName,
       uuid,
       testerId: interaction.user.id,
       gamemodeLabel: gamemode ? `${gamemode.emoji} ${gamemode.name}` : gamemodeKey,
       rankBefore,
       rankEarned,
-    });
+      cracked: isCracked,
+    };
+
+    const embed = testResultEmbed(embedData);
+
+    // Fetch skin image if UUID exists
+    let skinBuffer = null;
+    const files = [];
+
+    if (uuid) {
+      try {
+        skinBuffer = await getSkinImage(uuid, isCracked);
+        if (skinBuffer) {
+          files.push({ attachment: skinBuffer, name: "skin.png" });
+          embed.setImage("attachment://skin.png");
+        }
+      } catch (err) {
+        console.warn("Failed to fetch skin:", err);
+        // Continue without skin if it fails
+      }
+    }
+
+    const messagePayload = {
+      content: `<@${target.id}>`,
+      embeds: [embed],
+    };
+
+    if (files.length > 0) {
+      messagePayload.files = files;
+    }
 
     try {
-      await channel.send({ content: `<@${target.id}>`, embeds: [embed] });
+      await channel.send(messagePayload);
     } catch (err) {
       console.error("Failed to post test result:", err);
       return interaction.editReply({
@@ -117,3 +147,4 @@ module.exports = {
     await interaction.editReply({ content: `✅ Result posted in <#${RESULT_CHANNEL_ID}>.` });
   },
 };
+
