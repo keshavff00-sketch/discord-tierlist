@@ -39,10 +39,10 @@ function profileEmbed(player) {
 }
 
 // Posted by /result to the RESULT_CHANNEL_ID channel when a tester
-// finishes testing a player.
+// finishes testing a player. Now shows premium/cracked indicator.
 const RESULT_EMBED_COLOR = 0xf5c518; // gold
 
-function testResultEmbed({ playerName, uuid, testerId, gamemodeLabel, rankBefore, rankEarned }) {
+function testResultEmbed({ playerName, uuid, testerId, gamemodeLabel, rankBefore, rankEarned, cracked = false }) {
   const embed = new EmbedBuilder()
     .setColor(RESULT_EMBED_COLOR)
     .setTitle(`${playerName}'s Test Results 🏆`)
@@ -51,7 +51,8 @@ function testResultEmbed({ playerName, uuid, testerId, gamemodeLabel, rankBefore
       { name: "Tester Name:", value: `<@${testerId}>` },
       { name: "Rank Before:", value: rankBefore },
       { name: "Rank Earned:", value: rankEarned },
-      { name: "Game Mode:", value: gamemodeLabel }
+      { name: "Game Mode:", value: gamemodeLabel },
+      { name: "Account Type:", value: cracked ? "🔓 Cracked" : "✅ Premium", inline: true }
     )
     .setFooter({ text: BRAND })
     .setTimestamp();
@@ -293,3 +294,4 @@ module.exports = {
   ticketEmbed,
   applicationPanelEmbed,
 };
+
