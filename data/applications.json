@@ -1,0 +1,146 @@
+[
+  {
+    "id": "62b48c85-520c-4562-939e-4e4f0f32dc2d",
+    "discordId": "1548983823012991018",
+    "discordTag": "desisteave",
+    "type": "staff",
+    "answers": [
+      {
+        "question": "What is your Discord username?",
+        "answer": "."
+      },
+      {
+        "question": "How old are you?",
+        "answer": "."
+      },
+      {
+        "question": "What timezone are you in?",
+        "answer": "."
+      },
+      {
+        "question": "How active are you on Discord and in our server?",
+        "answer": "."
+      },
+      {
+        "question": "Why do you want to become a Staff member?",
+        "answer": "."
+      },
+      {
+        "question": "Do you have any previous staff experience? If yes, explain.",
+        "answer": "."
+      },
+      {
+        "question": "What qualities make you a good Staff member?",
+        "answer": "."
+      },
+      {
+        "question": "How would you handle two members arguing in a public channel?",
+        "answer": "."
+      },
+      {
+        "question": "What would you do if a friend of yours broke the server rules?",
+        "answer": "."
+      },
+      {
+        "question": "How would you deal with a toxic or disrespectful member?",
+        "answer": "."
+      },
+      {
+        "question": "What would you do if you disagreed with another Staff member's decision?",
+        "answer": "."
+      },
+      {
+        "question": "How would you respond if a member accused you of abusing your permissions?",
+        "answer": "."
+      },
+      {
+        "question": "What would you do if you accidentally punished the wrong member?",
+        "answer": "."
+      },
+      {
+        "question": "Are you comfortable working as part of a Staff team and following instructions from higher-ranked Staff?",
+        "answer": "."
+      },
+      {
+        "question": "Why should we choose you for the Staff team?",
+        "answer": "."
+      }
+    ],
+    "submittedAt": 1790362885272,
+    "status": "accepted",
+    "reviewedBy": "1548983823012991018",
+    "reviewedAt": 1790362897356
+  },
+  {
+    "id": "8d5d21d1-62dd-46ec-96eb-95e8845cc2d1",
+    "discordId": "1548983823012991018",
+    "discordTag": "desisteave",
+    "type": "tester",
+    "answers": [
+      {
+        "question": "What is your Discord username?",
+        "answer": "fuck u"
+      },
+      {
+        "question": "How old are you?",
+        "answer": "fuck u"
+      },
+      {
+        "question": "What timezone are you in?",
+        "answer": "fuck u"
+      },
+      {
+        "question": "How active are you on Discord?",
+        "answer": "fuck"
+      },
+      {
+        "question": "Why do you want to become a Tester?",
+        "answer": "fcuk"
+      },
+      {
+        "question": "Do you have any previous testing experience? If yes, explain.",
+        "answer": "fuck"
+      },
+      {
+        "question": "What makes you a good Tester?",
+        "answer": "fuck"
+      },
+      {
+        "question": "How would you report a bug you discovered?",
+        "answer": "fuck"
+      },
+      {
+        "question": "What information should a proper bug report contain?",
+        "answer": "oh yes dadddy"
+      },
+      {
+        "question": "If you find a critical bug, what would you do first?",
+        "answer": "sefasef"
+      },
+      {
+        "question": "How would you test a new feature before it is released?",
+        "answer": "sefsef"
+      },
+      {
+        "question": "What would you do if you cannot reproduce a bug reported by another member?",
+        "answer": "sf"
+      },
+      {
+        "question": "How would you handle confidential or unreleased features?",
+        "answer": "fs"
+      },
+      {
+        "question": "How much time can you dedicate to testing each week?",
+        "answer": "sfs"
+      },
+      {
+        "question": "Why should we choose you over other applicants?",
+        "answer": "sef"
+      }
+    ],
+    "submittedAt": 1790363329732,
+    "status": "accepted",
+    "reviewedBy": "1548983823012991018",
+    "reviewedAt": 1790363344888
+  }
+]
