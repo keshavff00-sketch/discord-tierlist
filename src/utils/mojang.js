@@ -61,14 +61,14 @@ function headUrl(uuid, size = 128) {
   return `https://crafatar.com/renders/head/${uuid}?size=${size}&overlay`;
 }
 
-// For cracked accounts we never had a real skin to render in the first
-// place — the "uuid" is just a locally-generated fake one, and asking
-// Crafatar to render it is unreliable (sometimes blank/broken). Minotar
-// has a literal "steve" alias that always renders the default Minecraft
-// skin, so we use that instead of guessing from the fake UUID.
-function skinRenderUrl({ uuid, cracked }, size = 128) {
-  if (cracked || !uuid) return `https://minotar.net/cube/steve/${size}.png`;
-  return headUrl(uuid, size);
+// Renders via Minotar instead of Crafatar for BOTH cases — Crafatar was
+// unreliable for premium lookups (sometimes just wouldn't load, showing
+// a blank embed thumbnail). Minotar resolves a real IGN's skin directly
+// by username (no UUID needed), and has a literal "steve" alias that
+// always renders the default Minecraft skin for cracked accounts.
+function skinRenderUrl({ playerName, cracked }, size = 128) {
+  const name = cracked || !playerName ? "steve" : playerName;
+  return `https://minotar.net/cube/${encodeURIComponent(name)}/${size}.png`;
 }
 
 module.exports = { lookupUUID, headUrl, offlineUUID, skinRenderUrl };
