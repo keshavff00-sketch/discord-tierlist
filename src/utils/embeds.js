@@ -8,7 +8,7 @@ const {
   gamemodeByKey,
 } = require("../config");
 const { totalPoints } = require("../database");
-const { headUrl } = require("./mojang");
+const { headUrl, skinRenderUrl } = require("./mojang");
 
 function profileEmbed(player) {
   const points = totalPoints(player);
@@ -42,7 +42,7 @@ function profileEmbed(player) {
 // finishes testing a player.
 const RESULT_EMBED_COLOR = 0xf5c518; // gold
 
-function testResultEmbed({ playerName, uuid, testerId, gamemodeLabel, rankBefore, rankEarned }) {
+function testResultEmbed({ playerName, uuid, cracked, testerId, gamemodeLabel, rankBefore, rankEarned }) {
   const embed = new EmbedBuilder()
     .setColor(RESULT_EMBED_COLOR)
     .setTitle(`${playerName}'s Test Results 🏆`)
@@ -56,7 +56,10 @@ function testResultEmbed({ playerName, uuid, testerId, gamemodeLabel, rankBefore
     .setFooter({ text: BRAND })
     .setTimestamp();
 
-  if (uuid) embed.setThumbnail(headUrl(uuid));
+  // Premium accounts get their real 3D skin render; cracked (or
+  // unresolvable) accounts always fall back to the default Steve render,
+  // since a cracked account's UUID isn't a real skin to look up.
+  embed.setThumbnail(skinRenderUrl({ uuid, cracked }));
 
   return embed;
 }
