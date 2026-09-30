@@ -7,7 +7,7 @@
 
 const { SlashCommandBuilder } = require("discord.js");
 const { GAMEMODE_KEYS, gamemodeByKey, LOW_TIERS, RESULT_CHANNEL_ID } = require("../config");
-const { isTester } = require("../database");
+const { isTesterMember } = require("../utils/permissions");
 const { lookupUUID } = require("../utils/mojang");
 const { testResultEmbed } = require("../utils/embeds");
 
@@ -49,7 +49,7 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    if (!isTester(interaction.user.id) && !interaction.memberPermissions?.has("Administrator")) {
+    if (!isTesterMember(interaction)) {
       return interaction.reply({
         content: "❌ Only testers or admins can post test results.",
         ephemeral: true,
@@ -80,6 +80,7 @@ module.exports = {
     const lookup = await lookupUUID(mcUsername).catch(() => null);
     const playerName = lookup?.ign || mcUsername;
     const uuid = lookup?.uuid || null;
+    const cracked = lookup?.cracked ?? true; // unknown/failed lookup -> treat as cracked so Steve shows instead of a broken image
 
     let channel;
     try {
@@ -99,6 +100,7 @@ module.exports = {
     const embed = testResultEmbed({
       playerName,
       uuid,
+      cracked,
       testerId: interaction.user.id,
       gamemodeLabel: gamemode ? `${gamemode.emoji} ${gamemode.name}` : gamemodeKey,
       rankBefore,
