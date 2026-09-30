@@ -59,7 +59,7 @@ function testResultEmbed({ playerName, uuid, cracked, testerId, gamemodeLabel, r
   // Premium accounts get their real 3D skin render; cracked (or
   // unresolvable) accounts always fall back to the default Steve render,
   // since a cracked account's UUID isn't a real skin to look up.
-  embed.setThumbnail(skinRenderUrl({ uuid, cracked }));
+  embed.setThumbnail(skinRenderUrl({ playerName, cracked }));
 
   return embed;
 }
