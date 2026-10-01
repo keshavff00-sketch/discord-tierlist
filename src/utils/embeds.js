@@ -169,7 +169,7 @@ function queuePanelEmbed() {
 
 // Shown in the private ticket channel /pull creates — the tester's
 // at-a-glance view of who they just pulled and what they're testing.
-function ticketEmbed(player, gm, entry, tester) {
+function ticketEmbed(player, gm, entry, tester, discordAvatarUrl) {
   const embed = new EmbedBuilder()
     .setColor(BRAND_COLOR)
     .setTitle(`${gm.emoji} ${gm.name} Test — ${player.ign || "Unknown Player"}`)
@@ -188,12 +188,13 @@ function ticketEmbed(player, gm, entry, tester) {
     .setFooter({ text: BRAND })
     .setTimestamp();
 
-  // Logo goes in the thumbnail slot (top-right corner). The player's
-  // head moves to the small author icon (top-left, next to their name)
-  // so both stay visible.
-  if (player.uuid) {
-    embed.setAuthor({ name: player.ign || "Unknown Player", iconURL: headUrl(player.uuid) });
-  }
+  // Logo goes in the thumbnail slot (top-right corner). The pulled
+  // player's Discord profile picture goes in the small author icon
+  // (top-left, next to their name) so both stay visible.
+  embed.setAuthor({
+    name: player.ign || "Unknown Player",
+    iconURL: discordAvatarUrl || undefined,
+  });
   embed.setThumbnail(LOGO_ATTACHMENT_URL);
 
   return embed;
