@@ -97,6 +97,11 @@ module.exports = {
     await removeQueueRole(interaction.guild, discordId, gm);
     await refreshQueuePanel(interaction.guild, gm);
 
+    // Best-effort fetch of the pulled player's Discord avatar for the
+    // ticket embed's author icon — a failed fetch just leaves it off.
+    const pulledUser = await interaction.client.users.fetch(discordId).catch(() => null);
+    const discordAvatarUrl = pulledUser?.displayAvatarURL({ size: 128 }) || null;
+
     const channelName = `${gm.key.toLowerCase()}-${slugify(entry.username || player.ign)}`;
 
     let ticketChannel;
@@ -140,7 +145,7 @@ module.exports = {
 
     await ticketChannel.send({
       content: `<@${interaction.user.id}> <@${discordId}> — new ${gm.name} test ticket.`,
-      embeds: [ticketEmbed(player, gm, entry, interaction.user)],
+      embeds: [ticketEmbed(player, gm, entry, interaction.user, discordAvatarUrl)],
       components: [buildCloseTicketRow()],
       files: [logoAttachment()],
     });
