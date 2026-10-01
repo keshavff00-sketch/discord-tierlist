@@ -14,7 +14,7 @@
 // ============================================================
 
 const { isTester } = require("../database");
-const { TESTER_ROLE_ID, TRIAL_TESTER_ROLE_ID } = require("../config");
+const { TESTER_ROLE_ID, TRIAL_TESTER_ROLE_ID, GAMEMODES } = require("../config");
 
 function isTesterMember(interaction) {
   if (interaction.memberPermissions?.has("Administrator")) return true;
@@ -29,4 +29,28 @@ function isTesterMember(interaction) {
   return false;
 }
 
-module.exports = { isTesterMember };
+// Per-gamemode permission check, used by /pull and /queue open|close.
+//  - Admins can manage every gamemode's queue.
+//  - If the member holds ANY gamemode-specific tester role (e.g.
+//    SWORD_TESTER_ROLE_ID), they may ONLY manage the gamemodes whose
+//    role they hold — even if they also have the general Tester role.
+//  - Members with no gamemode-specific role fall back to the normal
+//    isTesterMember() check (all gamemodes), so existing setups keep working.
+function canManageGamemode(interaction, gamemodeKey) {
+  if (interaction.memberPermissions?.has("Administrator")) return true;
+
+  const roles = interaction.member?.roles?.cache;
+  if (roles) {
+    const gmRoleIds = GAMEMODES.map((g) => g.testerRoleId).filter(Boolean);
+    const heldGmRoles = gmRoleIds.filter((id) => roles.has(id));
+
+    if (heldGmRoles.length > 0) {
+      const target = GAMEMODES.find((g) => g.key === gamemodeKey.toUpperCase());
+      return !!target?.testerRoleId && roles.has(target.testerRoleId);
+    }
+  }
+
+  return isTesterMember(interaction);
+}
+
+module.exports = { isTesterMember, canManageGamemode };
