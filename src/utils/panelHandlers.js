@@ -20,9 +20,9 @@ const {
   removeFromWaitlist,
   getQueueState,
   waitlistEntries,
-  isTester,
-} = require("../database");
+  } = require("../database");
 const { gamemodeByKey, normalizeRegion } = require("../config");
+const { isTesterMember } = require("./permissions");
 const {
   REGISTER_BUTTON_ID,
   REGISTER_MODAL_ID,
@@ -328,7 +328,7 @@ async function removeQueueRole(guild, discordId, gm) {
 // deletes the channel a few seconds after confirming, so the reply is
 // still readable before it disappears.
 async function handleTicketCloseButton(interaction) {
-  if (!isTester(interaction.user.id) && !interaction.memberPermissions?.has("Administrator")) {
+  if (!isTesterMember(interaction)) {
     return interaction.reply({
       content: "❌ Only testers or admins can close this ticket.",
       ephemeral: true,
