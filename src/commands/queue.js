@@ -10,7 +10,7 @@ const {
 } = require("discord.js");
 const { GAMEMODE_KEYS, gamemodeByKey } = require("../config");
 const { getQueueState, setQueueState, waitlistEntries } = require("../database");
-const { isTesterMember } = require("../utils/permissions");
+const { isTesterMember, canManageGamemode } = require("../utils/permissions");
 const { queueOpenEmbed, queueClosedEmbed } = require("../utils/embeds");
 const { buildJoinLeaveRow } = require("../utils/panelHandlers");
 
@@ -68,6 +68,13 @@ module.exports = {
     const gm = gamemodeByKey(gamemodeKey);
     if (!gm) {
       return interaction.reply({ content: "❌ Unknown gamemode.", ephemeral: true });
+    }
+
+    if (!canManageGamemode(interaction, gm.key)) {
+      return interaction.reply({
+        content: `❌ You're not allowed to open/close the **${gm.name}** queue — you can only manage your own gamemode's queue.`,
+        ephemeral: true,
+      });
     }
 
     const subcommand = interaction.options.getSubcommand();
