@@ -31,6 +31,7 @@ module.exports = {
     upsertPlayer(interaction.user.id, {
       ign: result.ign,
       uuid: result.uuid,
+      cracked: result.cracked,
     });
 
     if (result.cracked) {
