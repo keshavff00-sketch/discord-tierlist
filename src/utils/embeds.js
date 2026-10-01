@@ -32,7 +32,9 @@ function profileEmbed(player) {
     .setFooter({ text: BRAND })
     .setTimestamp(player.updatedAt || Date.now());
 
-  if (player.uuid) embed.setThumbnail(headUrl(player.uuid));
+  // Same rule as test results: premium accounts get their real 3D skin,
+  // cracked accounts always get the default Steve render.
+  if (player.ign) embed.setThumbnail(skinRenderUrl({ playerName: player.ign, cracked: player.cracked }));
   if (player.region) embed.addFields({ name: "Region", value: player.region, inline: true });
 
   return embed;
