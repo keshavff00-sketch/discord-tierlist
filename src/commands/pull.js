@@ -15,7 +15,7 @@ const {
   AttachmentBuilder,
 } = require("discord.js");
 const { GAMEMODE_KEYS, gamemodeByKey, TICKET_CATEGORY_ID, LOGO_PATH } = require("../config");
-const { isTesterMember } = require("../utils/permissions");
+const { isTesterMember, canManageGamemode } = require("../utils/permissions");
 const {
   pullNextFromWaitlist,
   getPlayer,
@@ -73,6 +73,13 @@ module.exports = {
     const gm = gamemodeByKey(gamemodeKey);
     if (!gm) {
       return interaction.reply({ content: "❌ Unknown gamemode.", ephemeral: true });
+    }
+
+    if (!canManageGamemode(interaction, gm.key)) {
+      return interaction.reply({
+        content: `❌ You're not allowed to pull from the **${gm.name}** queue — you can only pull from your own gamemode's queue.`,
+        ephemeral: true,
+      });
     }
 
     await interaction.deferReply({ ephemeral: true });
