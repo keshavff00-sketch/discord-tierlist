@@ -14,7 +14,7 @@
 // ============================================================
 
 const { isTester } = require("../database");
-const { TESTER_ROLE_ID, TRIAL_TESTER_ROLE_ID, GAMEMODES } = require("../config");
+const { TESTER_ROLE_ID, TRIAL_TESTER_ROLE_ID } = require("../config");
 
 function isTesterMember(interaction) {
   if (interaction.memberPermissions?.has("Administrator")) return true;
@@ -29,28 +29,16 @@ function isTesterMember(interaction) {
   return false;
 }
 
-// Per-gamemode permission check, used by /pull and /queue open|close.
-//  - Admins can manage every gamemode's queue.
-//  - If the member holds ANY gamemode-specific tester role (e.g.
-//    SWORD_TESTER_ROLE_ID), they may ONLY manage the gamemodes whose
-//    role they hold — even if they also have the general Tester role.
-//  - Members with no gamemode-specific role fall back to the normal
-//    isTesterMember() check (all gamemodes), so existing setups keep working.
-function canManageGamemode(interaction, gamemodeKey) {
+// Gamemode-specific check, used by /pull. If the gamemode has its own
+// tester role (<KEY>_TESTER_ROLE_ID), ONLY that role (or an Administrator)
+// passes — the general Tester / Trial Tester roles do NOT. If the gamemode
+// has no dedicated role configured, it falls back to isTesterMember().
+function canTestGamemode(interaction, gm) {
   if (interaction.memberPermissions?.has("Administrator")) return true;
-
-  const roles = interaction.member?.roles?.cache;
-  if (roles) {
-    const gmRoleIds = GAMEMODES.map((g) => g.testerRoleId).filter(Boolean);
-    const heldGmRoles = gmRoleIds.filter((id) => roles.has(id));
-
-    if (heldGmRoles.length > 0) {
-      const target = GAMEMODES.find((g) => g.key === gamemodeKey.toUpperCase());
-      return !!target?.testerRoleId && roles.has(target.testerRoleId);
-    }
+  if (gm?.testerRoleId) {
+    return Boolean(interaction.member?.roles?.cache?.has(gm.testerRoleId));
   }
-
   return isTesterMember(interaction);
 }
 
-module.exports = { isTesterMember, canManageGamemode };
+module.exports = { isTesterMember, canTestGamemode };
