@@ -36,6 +36,18 @@ ensureFile(WAITLIST_FILE, {});
 ensureFile(APPLICATIONS_FILE, []);
 ensureFile(QUEUE_STATE_FILE, {});
 
+// --- Startup diagnostics (helps debug lost data on hosts like Railway) ---
+try {
+  const qs = JSON.parse(fs.readFileSync(QUEUE_STATE_FILE, "utf-8"));
+  console.log(
+    `[db] DATA_DIR=${DATA_DIR} | host=${require("os").hostname()} | pid=${process.pid} | queueState keys: ${
+      Object.keys(qs).join(", ") || "(empty)"
+    }`
+  );
+} catch (err) {
+  console.log("[db] Could not read queueState.json:", err.message);
+}
+
 // ---------------- Players ----------------
 // players.json shape:
 // { [discordId]: { discordId, ign, uuid, region, tiers: { CRYSTAL: "HT2", ... }, updatedAt } }
