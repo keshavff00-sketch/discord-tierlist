@@ -44,6 +44,12 @@ const TICKET_CATEGORY_ID = process.env.TICKET_CATEGORY_ID || null;
 const STAFF_ROLE_ID = process.env.STAFF_ROLE_ID || null;
 const TESTER_ROLE_ID = process.env.TESTER_ROLE_ID || null;
 
+// A second tester-tier role (e.g. "Trial Tester") that should also be
+// able to use tester commands (/pull, /result, /high-result, /setrank,
+// etc.) alongside the main TESTER_ROLE_ID role. Set
+// TRIAL_TESTER_ROLE_ID in your .env to that role's ID.
+const TRIAL_TESTER_ROLE_ID = process.env.TRIAL_TESTER_ROLE_ID || null;
+
 // Whether /register and the panel's Register button accept cracked
 // (offline-mode) Minecraft accounts, not just premium ones. Set
 // ALLOW_CRACKED_ACCOUNTS=false in your .env to require premium only.
@@ -167,6 +173,7 @@ module.exports = {
   TICKET_CATEGORY_ID,
   STAFF_ROLE_ID,
   TESTER_ROLE_ID,
+  TRIAL_TESTER_ROLE_ID,
   ALLOW_CRACKED_ACCOUNTS,
   GAMEMODES,
   GAMEMODE_KEYS,
