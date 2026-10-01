@@ -57,8 +57,6 @@ const ALLOW_CRACKED_ACCOUNTS =
   (process.env.ALLOW_CRACKED_ACCOUNTS || "true").toLowerCase() === "true";
 
 // All tracked PvP gamemodes (this is where new gamemodes get added).
-// Each gamemode can also have its own tester role (<KEY>_TESTER_ROLE_ID,
-// e.g. SWORD_TESTER_ROLE_ID) that limits a tester to that gamemode only.
 // Each gamemode can have a "queue" role auto-assigned to a player the
 // moment they join that gamemode's waitlist. Set <KEY>_QUEUE_ROLE_ID in
 // your .env (e.g. NETHPOT_QUEUE_ROLE_ID) to enable it for that gamemode;
@@ -74,11 +72,12 @@ const GAMEMODES_BASE = [
   { key: "SMP", name: "SMP PvP", emoji: "🌍" },
 ];
 
+// Each gamemode can also have its own "tester" role (e.g. SWORD_TESTER_ROLE_ID).
+// If set, only members with that role (or Administrators) can /pull from
+// that gamemode's queue. If unset, /pull falls back to the general tester check.
 const GAMEMODES = GAMEMODES_BASE.map((g) => ({
   ...g,
   queueRoleId: process.env[`${g.key}_QUEUE_ROLE_ID`] || null,
-  // Per-gamemode tester role (e.g. SWORD_TESTER_ROLE_ID). A member holding
-  // this role can /pull and /queue open|close ONLY for this gamemode.
   testerRoleId: process.env[`${g.key}_TESTER_ROLE_ID`] || null,
 }));
 
