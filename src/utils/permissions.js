@@ -14,7 +14,7 @@
 // ============================================================
 
 const { isTester } = require("../database");
-const { TESTER_ROLE_ID, TRIAL_TESTER_ROLE_ID } = require("../config");
+const { TESTER_ROLE_ID, TRIAL_TESTER_ROLE_ID, gamemodeByKey } = require("../config");
 
 function isTesterMember(interaction) {
   if (interaction.memberPermissions?.has("Administrator")) return true;
@@ -41,4 +41,11 @@ function canTestGamemode(interaction, gm) {
   return isTesterMember(interaction);
 }
 
-module.exports = { isTesterMember, canTestGamemode };
+// Used by /queue open|close. Same rule as canTestGamemode, but accepts
+// either a gamemode object or a gamemode key string (e.g. "SWORD").
+function canManageGamemode(interaction, gmOrKey) {
+  const gm = typeof gmOrKey === "string" ? gamemodeByKey(gmOrKey) : gmOrKey;
+  return canTestGamemode(interaction, gm);
+}
+
+module.exports = { isTesterMember, canTestGamemode, canManageGamemode };
