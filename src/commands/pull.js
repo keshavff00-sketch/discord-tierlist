@@ -15,8 +15,8 @@ const {
   AttachmentBuilder,
 } = require("discord.js");
 const { GAMEMODE_KEYS, gamemodeByKey, TICKET_CATEGORY_ID, LOGO_PATH } = require("../config");
+const { isTesterMember } = require("../utils/permissions");
 const {
-  isTester,
   pullNextFromWaitlist,
   getPlayer,
 } = require("../database");
@@ -62,7 +62,7 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    if (!isTester(interaction.user.id) && !interaction.memberPermissions?.has("Administrator")) {
+    if (!isTesterMember(interaction)) {
       return interaction.reply({
         content: "❌ Only testers or admins can pull from the queue.",
         ephemeral: true,
