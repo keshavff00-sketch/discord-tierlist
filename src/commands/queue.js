@@ -9,7 +9,8 @@ const {
   SlashCommandBuilder,
 } = require("discord.js");
 const { GAMEMODE_KEYS, gamemodeByKey } = require("../config");
-const { isTester, getQueueState, setQueueState, waitlistEntries } = require("../database");
+const { getQueueState, setQueueState, waitlistEntries } = require("../database");
+const { isTesterMember } = require("../utils/permissions");
 const { queueOpenEmbed, queueClosedEmbed } = require("../utils/embeds");
 const { buildJoinLeaveRow } = require("../utils/panelHandlers");
 
@@ -56,7 +57,7 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    if (!isTester(interaction.user.id) && !interaction.memberPermissions?.has("Administrator")) {
+    if (!isTesterMember(interaction)) {
       return interaction.reply({
         content: "❌ Only testers or admins can open/close queues.",
         ephemeral: true,
