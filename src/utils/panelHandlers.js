@@ -237,7 +237,7 @@ async function handleRegisterModal(interaction) {
     return interaction.editReply(msg);
   }
 
-  upsertPlayer(interaction.user.id, { ign: result.ign, uuid: result.uuid });
+  upsertPlayer(interaction.user.id, { ign: result.ign, uuid: result.uuid, cracked: result.cracked });
 
   if (result.cracked) {
     return interaction.editReply(
