@@ -61,12 +61,12 @@ function headUrl(uuid, size = 128) {
   return `https://crafatar.com/renders/head/${uuid}?size=${size}&overlay`;
 }
 
-// Full-body 3D skin render via MC-Heads. Premium accounts get their
-// real skin (looked up by username); cracked accounts always get the
-// default Steve skin, since an offline UUID has no real skin to fetch.
+// 3D bust render (head + torso + arms) via mc-api.io. Premium accounts
+// get their real skin; cracked accounts always get the default Steve
+// skin, since an offline UUID has no real skin to fetch.
 function skinRenderUrl({ playerName, cracked }, size = 256) {
   const name = cracked || !playerName ? "MHF_Steve" : playerName;
-  return `https://mc-heads.net/player/${encodeURIComponent(name)}/${size}`;
+  return `https://mc-api.io/render/BUST/${encodeURIComponent(name)}/JAVA?size=${size}`;
 }
 
 module.exports = { lookupUUID, headUrl, offlineUUID, skinRenderUrl };
