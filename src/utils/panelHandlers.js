@@ -135,15 +135,7 @@ async function handleWaitlistSelect(interaction) {
     return interaction.reply({ content: "❌ Unknown gamemode.", ephemeral: true });
   }
 
-  // A dedicated /setup queue panel exists and is closed for this
-  // gamemode — respect that even when joining via the older dropdown.
-  const state = getQueueState(gm.key);
-  if (state && !state.open) {
-    return interaction.reply({
-      content: `❌ The **${gm.name}** queue is currently closed. You'll be notified when it opens.`,
-      ephemeral: true,
-    });
-  }
+
 
   const player = getPlayer(interaction.user.id);
   if (!player || !player.ign) {
