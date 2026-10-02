@@ -270,11 +270,15 @@ async function handleWaitlistModal(interaction, gamemodeKey) {
 
   joinWaitlist(interaction.user.id, gamemodeKey, { region, username });
 
-  const roleNote = await assignQueueRole(interaction, gm);
+   const roleNote = await assignQueueRole(interaction, gm);
   await refreshQueuePanel(interaction.guild, gm);
 
+  const closedNote = getQueueState(gm.key)?.open
+    ? ""
+    : "\n🔒 The queue is currently closed. You're on the waitlist and will be notified when it opens.";
+
   return interaction.reply({
-    content: `✅ Joined the **${gm.name}** waitlist!\n**Region:** ${region}\n**Username:** ${username}\n\nA tester will reach out when it's your turn. You can rejoin this waitlist again in 7 days.${roleNote}`,
+    content: `✅ Joined the **${gm.name}** waitlist!\n**Region:** ${region}\n**Username:** ${username}\n\nA tester will reach out when it's your turn. You can rejoin this waitlist again in 7 days.${closedNote}${roleNote}`,
     ephemeral: true,
   });
 }
