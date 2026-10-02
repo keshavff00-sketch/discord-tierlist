@@ -61,14 +61,12 @@ function headUrl(uuid, size = 128) {
   return `https://crafatar.com/renders/head/${uuid}?size=${size}&overlay`;
 }
 
-// Renders via Minotar instead of Crafatar for BOTH cases — Crafatar was
-// unreliable for premium lookups (sometimes just wouldn't load, showing
-// a blank embed thumbnail). Minotar resolves a real IGN's skin directly
-// by username (no UUID needed), and has a literal "steve" alias that
-// always renders the default Minecraft skin for cracked accounts.
-function skinRenderUrl({ playerName, cracked }, size = 128) {
-  const name = cracked || !playerName ? "steve" : playerName;
-  return `https://minotar.net/cube/${encodeURIComponent(name)}/${size}.png`;
+// Full-body 3D skin render via MC-Heads. Premium accounts get their
+// real skin (looked up by username); cracked accounts always get the
+// default Steve skin, since an offline UUID has no real skin to fetch.
+function skinRenderUrl({ playerName, cracked }, size = 256) {
+  const name = cracked || !playerName ? "MHF_Steve" : playerName;
+  return `https://mc-heads.net/player/${encodeURIComponent(name)}/${size}`;
 }
 
 module.exports = { lookupUUID, headUrl, offlineUUID, skinRenderUrl };
