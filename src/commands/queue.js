@@ -9,10 +9,10 @@ const {
   SlashCommandBuilder,
 } = require("discord.js");
 const { GAMEMODE_KEYS, gamemodeByKey } = require("../config");
-const { getQueueState, setQueueState, waitlistEntries } = require("../database");
-const { isTesterMember, canManageGamemode } = require("../utils/permissions");
+const { getQueueState, setQueueState, waitlistEntries, clearWaitlist } = require("../database");
+const { canTestGamemode } = require("../utils/permissions");
 const { queueOpenEmbed, queueClosedEmbed } = require("../utils/embeds");
-const { buildJoinLeaveRow } = require("../utils/panelHandlers");
+const { buildJoinLeaveRow, removeQueueRole } = require("../utils/panelHandlers");
 
 // Fetches the panel message a gamemode's queue state points at.
 // Returns null (and lets the caller reply with an error) if it's
@@ -57,22 +57,15 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    if (!isTesterMember(interaction)) {
-      return interaction.reply({
-        content: "❌ Only testers or admins can open/close queues.",
-        ephemeral: true,
-      });
-    }
-
     const gamemodeKey = interaction.options.getString("gamemode", true);
     const gm = gamemodeByKey(gamemodeKey);
     if (!gm) {
       return interaction.reply({ content: "❌ Unknown gamemode.", ephemeral: true });
     }
 
-    if (!canManageGamemode(interaction, gm.key)) {
+    if (!canTestGamemode(interaction, gamemodeKey)) {
       return interaction.reply({
-        content: `❌ You're not allowed to open/close the **${gm.name}** queue — you can only manage your own gamemode's queue.`,
+        content: `❌ You can't open/close the **${gm.name}** queue. You need to be a tester for this gamemode (or a general tester/admin).`,
         ephemeral: true,
       });
     }
@@ -121,17 +114,27 @@ module.exports = {
       return interaction.editReply(`✅ **${gm.name}** queue is now **open**.`);
     }
 
-    // close
+    // close — also empty the waitlist so it doesn't instantly refill
+    // with leftover entries the next time this gamemode's queue opens.
     const newState = setQueueState(gm.key, {
       open: false,
       closedAt: Date.now(),
     });
+
+    const clearedIds = clearWaitlist(gm.key);
+    for (const discordId of clearedIds) {
+      await removeQueueRole(interaction.guild, discordId, gm).catch(() => {});
+    }
 
     await message.edit({
       embeds: [queueClosedEmbed(gm, newState)],
       components: [],
     });
 
-    return interaction.editReply(`✅ **${gm.name}** queue is now **closed**.`);
+    return interaction.editReply(
+      `✅ **${gm.name}** queue is now **closed**.${
+        clearedIds.length > 0 ? ` Cleared **${clearedIds.length}** player(s) from the queue.` : ""
+      }`
+    );
   },
 };
