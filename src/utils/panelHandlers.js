@@ -135,7 +135,15 @@ async function handleWaitlistSelect(interaction) {
     return interaction.reply({ content: "❌ Unknown gamemode.", ephemeral: true });
   }
 
-
+  // A dedicated /setup queue panel exists and is closed for this
+  // gamemode — respect that even when joining via the older dropdown.
+  const state = getQueueState(gm.key);
+  if (state && !state.open) {
+    return interaction.reply({
+      content: `❌ The **${gm.name}** queue is currently closed. You'll be notified when it opens.`,
+      ephemeral: true,
+    });
+  }
 
   const player = getPlayer(interaction.user.id);
   if (!player || !player.ign) {
@@ -259,6 +267,17 @@ async function handleWaitlistModal(interaction, gamemodeKey) {
     });
   }
 
+  // Backstop for every join path (Join Queue button AND the main panel's
+  // dropdown): if this gamemode has a queue panel and it's closed, nobody
+  // gets added — players have to join manually after a tester opens it.
+  const queueState = getQueueState(gm.key);
+  if (queueState && !queueState.open) {
+    return interaction.reply({
+      content: `❌ The **${gm.name}** queue is currently closed. You'll be able to join once a tester opens it.`,
+      ephemeral: true,
+    });
+  }
+
   // Re-check cooldown in case of a race between select and modal submit.
   const remaining = waitlistCooldownRemaining(interaction.user.id, gamemodeKey);
   if (remaining > 0) {
@@ -270,15 +289,11 @@ async function handleWaitlistModal(interaction, gamemodeKey) {
 
   joinWaitlist(interaction.user.id, gamemodeKey, { region, username });
 
-   const roleNote = await assignQueueRole(interaction, gm);
+  const roleNote = await assignQueueRole(interaction, gm);
   await refreshQueuePanel(interaction.guild, gm);
 
-  const closedNote = getQueueState(gm.key)?.open
-    ? ""
-    : "\n🔒 The queue is currently closed. You're on the waitlist and will be notified when it opens.";
-
   return interaction.reply({
-    content: `✅ Joined the **${gm.name}** waitlist!\n**Region:** ${region}\n**Username:** ${username}\n\nA tester will reach out when it's your turn. You can rejoin this waitlist again in 7 days.${closedNote}${roleNote}`,
+    content: `✅ Joined the **${gm.name}** waitlist!\n**Region:** ${region}\n**Username:** ${username}\n\nA tester will reach out when it's your turn. You can rejoin this waitlist again in 7 days.${roleNote}`,
     ephemeral: true,
   });
 }
