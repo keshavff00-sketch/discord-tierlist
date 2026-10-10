@@ -36,18 +36,6 @@ ensureFile(WAITLIST_FILE, {});
 ensureFile(APPLICATIONS_FILE, []);
 ensureFile(QUEUE_STATE_FILE, {});
 
-// --- Startup diagnostics (helps debug lost data on hosts like Railway) ---
-try {
-  const qs = JSON.parse(fs.readFileSync(QUEUE_STATE_FILE, "utf-8"));
-  console.log(
-    `[db] DATA_DIR=${DATA_DIR} | host=${require("os").hostname()} | pid=${process.pid} | queueState keys: ${
-      Object.keys(qs).join(", ") || "(empty)"
-    }`
-  );
-} catch (err) {
-  console.log("[db] Could not read queueState.json:", err.message);
-}
-
 // ---------------- Players ----------------
 // players.json shape:
 // { [discordId]: { discordId, ign, uuid, region, tiers: { CRYSTAL: "HT2", ... }, updatedAt } }
@@ -222,6 +210,27 @@ function removeFromWaitlist(discordId, gamemodeKey) {
   return true;
 }
 
+// Removes EVERYONE from a gamemode's waitlist at once. Used when a
+// queue is closed, so the next time it's opened it starts empty instead
+// of instantly refilling with whoever never explicitly left last time.
+// Returns the discordIds that were removed (so their queue role can
+// also be stripped).
+function clearWaitlist(gamemodeKey) {
+  const key = gamemodeKey.toUpperCase();
+  const waitlist = getAllWaitlist();
+  const removedIds = [];
+
+  for (const [discordId, entries] of Object.entries(waitlist)) {
+    if (!entries[key]) continue;
+    removedIds.push(discordId);
+    delete entries[key];
+    if (Object.keys(entries).length === 0) delete waitlist[discordId];
+  }
+
+  if (removedIds.length > 0) writeJSON(WAITLIST_FILE, waitlist);
+  return removedIds;
+}
+
 // ---------------- Per-gamemode queue open/closed state ----------------
 // queueState.json shape:
 // { [gamemodeKey]: { open, messageId, channelId, openedBy, openedAt, closedAt } }
@@ -310,6 +319,18 @@ function updateApplicationStatus(id, patch) {
   return applications[idx];
 }
 
+// Backfill: applications accepted before acceptance started granting
+// testers.json permissions get synced here. Safe to call every boot —
+// addTester/addAdmin are idempotent.
+function syncAcceptedApplications() {
+  const applications = readJSON(APPLICATIONS_FILE);
+  for (const app of applications) {
+    if (app.status !== "accepted") continue;
+    if (app.type === "tester") addTester(app.discordId);
+    if (app.type === "staff") addAdmin(app.discordId);
+  }
+}
+
 module.exports = {
   getAllPlayers,
   getPlayer,
@@ -326,6 +347,7 @@ module.exports = {
   waitlistCount,
   waitlistEntries,
   removeFromWaitlist,
+  clearWaitlist,
   getQueueState,
   setQueueState,
   getStaff,
@@ -338,4 +360,5 @@ module.exports = {
   getApplications,
   getApplicationById,
   updateApplicationStatus,
+  syncAcceptedApplications,
 };
