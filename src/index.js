@@ -23,6 +23,7 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers, // needed to fetch members and assign roles on accept
     GatewayIntentBits.GuildInvites, // needed by the invite tracker to see invite use-counts
+    GatewayIntentBits.GuildMessages, // needed so the bot can see "-i" typed in server channels
     GatewayIntentBits.DirectMessages, // needed so awaitMessages() can hear DM replies
     GatewayIntentBits.MessageContent, // needed to read the text of those DM replies
   ],
