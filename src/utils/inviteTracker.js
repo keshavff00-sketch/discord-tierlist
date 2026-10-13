@@ -1,31 +1,43 @@
 // ============================================================
 // DIFUSED TIERS — invite tracker.
-// Posts "@inviter invited @member and has N invites" whenever someone
-// joins the server through an invite link.
+//
+// 1. Posts "@inviter invited @member and has N invites" whenever someone
+//    joins the server through an invite link.
+// 2. "-i" (or "-i @user" / "-i <user id>") shows an invite card:
+//    Joins / Left / Invites for that person.
 //
 // How it works: Discord doesn't say which invite a new member used, so
 // we keep a snapshot of every invite's use-count and, when a member
 // joins, see which invite's count went up.
 //
-// Needs: GuildInvites + GuildMembers intents, and the bot's "Manage
-// Server" permission (to read the invite list). Optional env var
-// INVITE_LOG_CHANNEL_ID picks the channel; otherwise the server's
-// system channel is used.
+// Needs: Guilds, GuildMembers, GuildInvites, GuildMessages and
+// MessageContent intents, and the bot's "Manage Server" permission (to
+// read the invite list). Optional env var INVITE_LOG_CHANNEL_ID picks
+// the channel for join announcements; otherwise the server's system
+// channel is used.
 // ============================================================
 
 const fs = require("fs");
 const path = require("path");
+const { EmbedBuilder } = require("discord.js");
+const config = require("../config");
+
+const EMBED_COLOR = config.BRAND_COLOR ?? 0x5865f2;
+const FOOTER_TEXT = config.BRAND ?? "Invites";
 
 const DATA_DIR = path.join(__dirname, "..", "..", "data");
 const INVITES_FILE = path.join(DATA_DIR, "invites.json");
 
 // guildId -> Map(code -> { uses, maxUses, inviterId })
 const cache = new Map();
-// guildId -> promise chain, so simultaneous joins are processed one at a
-// time (otherwise two joins can both "see" the same invite jump).
+// guildId -> promise chain, so simultaneous joins/leaves are processed
+// one at a time (otherwise two joins can both "see" the same invite jump).
 const queues = new Map();
 
-// ---------------- storage: { guildId: { inviterId: { invited: [ids] } } } ----------------
+// ---------------- storage ----------------
+// { guildId: { inviterId: { invited: [memberIds], left: [memberIds] } } }
+//   invited = everyone who joined through this person's invites
+//   left    = the ones from that list who have since left the server
 
 function load() {
   try {
@@ -40,15 +52,65 @@ function save(data) {
   fs.writeFileSync(INVITES_FILE, JSON.stringify(data, null, 2));
 }
 
-// Counts each invited member once, so someone leaving and rejoining
-// through the same inviter doesn't inflate their number.
+function statsOf(entry) {
+  const joins = entry?.invited?.length ?? 0;
+  const left = entry?.left?.length ?? 0;
+  return { joins, left, invites: joins - left };
+}
+
+// A member counts toward ONE inviter. If they come back through a
+// different person's link, they move over to that person.
+// Returns the inviter's current invite count (joins minus left).
 function recordInvite(guildId, inviterId, inviteeId) {
   const data = load();
   const guildData = (data[guildId] ??= {});
-  const entry = (guildData[inviterId] ??= { invited: [] });
+
+  for (const [otherId, other] of Object.entries(guildData)) {
+    if (otherId === inviterId) continue;
+    other.invited = (other.invited || []).filter((id) => id !== inviteeId);
+    other.left = (other.left || []).filter((id) => id !== inviteeId);
+  }
+
+  const entry = (guildData[inviterId] ??= { invited: [], left: [] });
+  entry.invited ??= [];
+  entry.left ??= [];
   if (!entry.invited.includes(inviteeId)) entry.invited.push(inviteeId);
+  entry.left = entry.left.filter((id) => id !== inviteeId); // they're back
+
   save(data);
-  return entry.invited.length;
+  return statsOf(entry).invites;
+}
+
+// Someone we tracked left the server: count it against their inviter.
+function recordLeave(guildId, memberId) {
+  const data = load();
+  const guildData = data[guildId] || {};
+  for (const entry of Object.values(guildData)) {
+    if (!entry.invited?.includes(memberId)) continue;
+    entry.left ??= [];
+    if (!entry.left.includes(memberId)) entry.left.push(memberId);
+    save(data);
+    return;
+  }
+}
+
+// A tracked member rejoined but we couldn't tell which invite they used:
+// keep their old inviter, just stop counting them as having left.
+function markReturned(guildId, memberId) {
+  const data = load();
+  const guildData = data[guildId] || {};
+  let changed = false;
+  for (const entry of Object.values(guildData)) {
+    if (entry.left?.includes(memberId)) {
+      entry.left = entry.left.filter((id) => id !== memberId);
+      changed = true;
+    }
+  }
+  if (changed) save(data);
+}
+
+function getStats(guildId, userId) {
+  return statsOf(load()[guildId]?.[userId]);
 }
 
 // ---------------- invite snapshots ----------------
@@ -128,6 +190,7 @@ async function handleMemberAdd(member) {
   if (member.user.bot) return;
 
   if (!found || !found.inviterId) {
+    markReturned(guild.id, member.id);
     await announce(guild, `<@${member.id}> joined, but I couldn't tell who invited them.`);
     return;
   }
@@ -139,15 +202,66 @@ async function handleMemberAdd(member) {
   );
 }
 
-function enqueue(guildId, task) {
-  const next = (queues.get(guildId) || Promise.resolve())
-    .then(task)
-    .catch((err) => console.error("[invites] Error handling a join:", err));
-  queues.set(guildId, next);
-  return next;
+function handleMemberRemove(member) {
+  if (member.user?.bot) return;
+  recordLeave(member.guild.id, member.id);
+}
+
+// ---------------- the "-i" command ----------------
+
+// "-i" or "-i <@mention or user id>" — nothing else, so words like
+// "-info" never trigger it. The target is read from the text itself
+// (not message.mentions) so replying to someone doesn't pick them.
+const COMMAND_RE = /^-i(?:\s+(\S+))?\s*$/i;
+
+async function handleCommand(message) {
+  if (message.author.bot || !message.guild) return;
+
+  const match = COMMAND_RE.exec(message.content.trim());
+  if (!match) return;
+
+  let user = message.author;
+  if (match[1]) {
+    const id = match[1].replace(/[<@!>]/g, "");
+    user = /^\d{15,22}$/.test(id) ? await message.client.users.fetch(id).catch(() => null) : null;
+    if (!user) {
+      await message
+        .reply({ content: "I couldn't find that user. Use `-i` or `-i @user`.", allowedMentions: { repliedUser: false } })
+        .catch(() => {});
+      return;
+    }
+  }
+
+  // Server avatar if they have one, otherwise their normal profile picture.
+  const member = await message.guild.members.fetch(user.id).catch(() => null);
+  const avatar = (member ?? user).displayAvatarURL({ size: 256 });
+  const stats = getStats(message.guild.id, user.id);
+
+  const embed = new EmbedBuilder()
+    .setColor(EMBED_COLOR)
+    .setAuthor({ name: `@${user.username}` })
+    .setThumbnail(avatar)
+    .addFields(
+      { name: "Joins", value: String(stats.joins), inline: true },
+      { name: "Left", value: String(stats.left), inline: true },
+      { name: "Invites", value: String(stats.invites), inline: true }
+    )
+    .setFooter({ text: FOOTER_TEXT });
+
+  await message
+    .reply({ embeds: [embed], allowedMentions: { repliedUser: false } })
+    .catch((err) => console.error("[invites] Couldn't send -i card:", err.message));
 }
 
 // ---------------- wiring ----------------
+
+function enqueue(guildId, task) {
+  const next = (queues.get(guildId) || Promise.resolve())
+    .then(task)
+    .catch((err) => console.error("[invites] Error handling a join/leave:", err));
+  queues.set(guildId, next);
+  return next;
+}
 
 function setupInviteTracker(client) {
   client.once("ready", async () => {
@@ -174,6 +288,14 @@ function setupInviteTracker(client) {
 
   client.on("guildMemberAdd", (member) => {
     enqueue(member.guild.id, () => handleMemberAdd(member));
+  });
+
+  client.on("guildMemberRemove", (member) => {
+    enqueue(member.guild.id, () => handleMemberRemove(member));
+  });
+
+  client.on("messageCreate", (message) => {
+    handleCommand(message).catch((err) => console.error("[invites] -i command error:", err));
   });
 }
 
