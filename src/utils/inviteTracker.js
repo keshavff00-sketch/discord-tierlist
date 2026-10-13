@@ -4,7 +4,7 @@
 // 1. Posts "@inviter invited @member and has N invites" whenever someone
 //    joins the server through an invite link.
 // 2. "-i" (or "-i @user" / "-i <user id>") shows an invite card:
-//    Joins / Left / Invites for that person.
+//    Joins / Left for that person.
 //
 // How it works: Discord doesn't say which invite a new member used, so
 // we keep a snapshot of every invite's use-count and, when a member
@@ -243,8 +243,7 @@ async function handleCommand(message) {
     .setThumbnail(avatar)
     .addFields(
       { name: "Joins", value: String(stats.joins), inline: true },
-      { name: "Left", value: String(stats.left), inline: true },
-      { name: "Invites", value: String(stats.invites), inline: true }
+      { name: "Left", value: String(stats.left), inline: true }
     )
     .setFooter({ text: FOOTER_TEXT });
 
