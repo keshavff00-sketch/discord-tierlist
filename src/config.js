@@ -61,15 +61,40 @@ const ALLOW_CRACKED_ACCOUNTS =
 // moment they join that gamemode's waitlist. Set <KEY>_QUEUE_ROLE_ID in
 // your .env (e.g. NETHPOT_QUEUE_ROLE_ID) to enable it for that gamemode;
 // leave it unset to skip role-assignment for that gamemode.
+// Bot ke uploaded emojis. Developer Portal -> Emojis se har ek ki ID copy karke yaha daal.
+// ID khali ("") hai toh purana normal emoji use hoga.
+const EMOJI = {
+  CRYSTAL: { name: "crystal", id: "" },
+  SWORD:   { name: "sword",   id: "" },
+  AXE:     { name: "axe",     id: "" },
+  MACE:    { name: "mace",    id: "" },
+  POT:     { name: "pot",     id: "" },
+  NETHPOT: { name: "nethpot", id: "" },
+  UHC:     { name: "uhc",     id: "" },
+  SMP:     { name: "smp",     id: "" },
+  // VANILLA: { name: "vanilla", id: "" },
+  // CART:    { name: "cart",    id: "" },
+  // DIASMP:  { name: "diasmp",  id: "" },
+};
+
+function emojiFor(key, fallback) {
+  const e = EMOJI[key];
+  return e && e.id ? `<:${e.name}:${e.id}>` : fallback;
+}
+
 const GAMEMODES_BASE = [
-  { key: "CRYSTAL", name: "Crystal PvP", emoji: "💎" },
-  { key: "SWORD", name: "Sword PvP", emoji: "⚔️" },
-  { key: "AXE", name: "Axe PvP", emoji: "🪓" },
-  { key: "MACE", name: "Mace PvP", emoji: "🔨" }, // newest 1.21 weapon gamemode
-  { key: "POT", name: "Pot PvP", emoji: "🧪" },
-  { key: "NETHPOT", name: "NethPot PvP", emoji: "🔥" },
-  { key: "UHC", name: "UHC PvP", emoji: "❤️" },
-  { key: "SMP", name: "SMP PvP", emoji: "🌍" },
+  { key: "CRYSTAL", name: "Crystal PvP", emoji: emojiFor("CRYSTAL", "💎") },
+  { key: "SWORD", name: "Sword PvP", emoji: emojiFor("SWORD", "⚔️") },
+  { key: "AXE", name: "Axe PvP", emoji: emojiFor("AXE", "🪓") },
+  { key: "MACE", name: "Mace PvP", emoji: emojiFor("MACE", "🔨") },
+  { key: "POT", name: "Pot PvP", emoji: emojiFor("POT", "🧪") },
+  { key: "NETHPOT", name: "NethPot PvP", emoji: emojiFor("NETHPOT", "🔥") },
+  { key: "UHC", name: "UHC PvP", emoji: emojiFor("UHC", "❤️") },
+  { key: "SMP", name: "SMP PvP", emoji: emojiFor("SMP", "🌍") },
+  // Naye gamemodes chahiye toh uncomment kar (aur EMOJI me bhi):
+  // { key: "VANILLA", name: "Vanilla PvP", emoji: emojiFor("VANILLA", "🍦") },
+  // { key: "CART", name: "Cart PvP", emoji: emojiFor("CART", "🧨") },
+  // { key: "DIASMP", name: "DiaSMP PvP", emoji: emojiFor("DIASMP", "💠") },
 ];
 
 // Each gamemode can also have its own "tester" role (e.g. SWORD_TESTER_ROLE_ID).
