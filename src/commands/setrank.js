@@ -1,7 +1,8 @@
-const { SlashCommandBuilder } = require("discord.js");
-const { GAMEMODE_KEYS, TIERS, isValidGamemode, isValidTier } = require("../config");
+const { SlashCommandBuilder, MessageFlags } = require("discord.js");
+const { GAMEMODE_KEYS, TIERS, isValidGamemode, isValidTier, gamemodeByKey } = require("../config");
 const { setTier, getPlayer, isTester } = require("../database");
 const { profileEmbed } = require("../utils/embeds");
+const { assignTierRole } = require("../utils/tierRoles");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -29,7 +30,7 @@ module.exports = {
     if (!isTester(interaction.user.id) && !interaction.memberPermissions?.has("Administrator")) {
       return interaction.reply({
         content: "❌ Only testers or admins can set ranks.",
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -38,21 +39,33 @@ module.exports = {
     const tier = interaction.options.getString("tier", true);
 
     if (!isValidGamemode(gamemode) || !isValidTier(tier)) {
-      return interaction.reply({ content: "❌ Invalid gamemode or tier.", ephemeral: true });
+      return interaction.reply({ content: "❌ Invalid gamemode or tier.", flags: MessageFlags.Ephemeral });
     }
 
     const player = getPlayer(target.id);
     if (!player || !player.ign) {
       return interaction.reply({
         content: `❌ **${target.username}** hasn't registered a Minecraft account. Ask them to run \`/register\` first.`,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
+    await interaction.deferReply();
+
     const updated = setTier(target.id, gamemode, tier);
 
-    await interaction.reply({
-      content: `✅ Set **${player.ign}**'s ${gamemode} tier to \`${tier}\`.`,
+    // Tier role assign (isi gamemode ka purana role hata ke naya dega)
+    const gm = gamemodeByKey(gamemode);
+    const roleNote = await assignTierRole(
+      interaction.guild,
+      target.id,
+      gamemode,
+      gm ? gm.name : gamemode,
+      tier
+    );
+
+    await interaction.editReply({
+      content: `✅ Set **${player.ign}**'s ${gamemode} tier to \`${tier}\`.${roleNote}`,
       embeds: [profileEmbed(updated)],
     });
   },
