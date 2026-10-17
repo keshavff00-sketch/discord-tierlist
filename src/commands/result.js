@@ -10,6 +10,7 @@ const { GAMEMODE_KEYS, gamemodeByKey, LOW_TIERS, RESULT_CHANNEL_ID } = require("
 const { isTesterMember } = require("../utils/permissions");
 const { lookupUUID } = require("../utils/mojang");
 const { testResultEmbed } = require("../utils/embeds");
+const { assignTierRole } = require("../utils/tierRoles");
 
 // /result only covers LT3 and below (worse tiers) — HT3 and better go
 // through /high-result instead. "Unranked" is offered alongside the
