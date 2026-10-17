@@ -117,6 +117,14 @@ module.exports = {
       });
     }
 
-    await interaction.editReply({ content: `✅ Result posted in <#${RESULT_CHANNEL_ID}>.` });
+        const roleNote = await assignTierRole(
+      interaction.guild,
+      target.id,
+      gamemodeKey,
+      gamemode ? gamemode.name : gamemodeKey,
+      rankEarned
+  );
+    
+    await interaction.editReply({ content: `✅ Result posted in <#${RESULT_CHANNEL_ID}>.${roleNote}` });
   },
 };
