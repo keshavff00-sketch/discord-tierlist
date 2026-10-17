@@ -21,7 +21,7 @@ module.exports = {
       .setColor(0x9b5de5)
       .setTitle(`${BRAND} — Staff`)
       .addFields(
-        { name: "🛡️ Admins", value: adminMentions, inline: true },
+        { name: "🛡️ Staff", value: adminMentions, inline: true },
         { name: "🧪 Testers", value: testerMentions, inline: true }
       )
       .setFooter({ text: BRAND });
