@@ -10,6 +10,7 @@ const { GAMEMODE_KEYS, gamemodeByKey, HIGH_TIERS, HIGH_RESULT_CHANNEL_ID } = req
 const { isTesterMember } = require("../utils/permissions");
 const { lookupUUID } = require("../utils/mojang");
 const { testResultEmbed } = require("../utils/embeds");
+const { assignTierRole } = require("../utils/tierRoles");
 
 // "Unranked" is offered alongside the real tiers for players being
 // tested for the very first time (no prior rank to show).
@@ -115,6 +116,14 @@ module.exports = {
       });
     }
 
-    await interaction.editReply({ content: `✅ Result posted in <#${HIGH_RESULT_CHANNEL_ID}>.` });
+        const roleNote = await assignTierRole(
+      interaction.guild,
+      target.id,
+      gamemodeKey,
+      gamemode ? gamemode.name : gamemodeKey,
+      rankEarned
+    );
+
+    await interaction.editReply({ content: `✅ Result posted in <#${HIGH_RESULT_CHANNEL_ID}>.${roleNote}` });
   },
 };
