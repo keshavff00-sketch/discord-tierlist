@@ -288,6 +288,24 @@ function addAdmin(discordId) {
   writeJSON(TESTERS_FILE, staff);
   return staff;
 }
+function removeAdmin(discordId) {
+  const staff = getStaff();
+  staff.admins = staff.admins.filter((id) => id !== discordId);
+  writeJSON(TESTERS_FILE, staff);
+
+  // Warna syncAcceptedApplications restart pe dobara admin bana dega
+  const applications = readJSON(APPLICATIONS_FILE);
+  let changed = false;
+  for (const app of applications) {
+    if (app.discordId === discordId && app.type === "staff" && app.status === "accepted") {
+      app.status = "revoked";
+      changed = true;
+    }
+  }
+  if (changed) writeJSON(APPLICATIONS_FILE, applications);
+
+  return staff;
+}
 
 // ---------------- Staff / Tester Applications ----------------
 // applications.json shape: array of
