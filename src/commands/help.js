@@ -33,10 +33,11 @@ module.exports = {
           "`/removerank <user> <gamemode>` — clear a tier",
       },
       {
-        name: "🛡️ Admin",
+        name: "🛡️ Staff",
         value:
           "`/addtester <user>` — grant tester permissions\n" +
           "`/removetester <user>` — revoke tester permissions",
+        "`/removeadmin <user>` — remove from admin staff list\n" +
       },
     ];
 
