@@ -12,12 +12,14 @@ function findTierRole(guild, gamemodeKey, gamemodeName, tier) {
     if (byId) return byId;
   }
 
-  const tierToken = tier.toLowerCase();
-  const gmTokens = tokens(gamemodeName);
+   const tierToken = tier.toLowerCase();
+  const gmTokens = tokens(gamemodeName).filter((g) => g !== "pvp");
+  const keyTokens = tokens(gamemodeKey).filter((g) => g !== "pvp");
+  const wanted = gmTokens.length ? gmTokens : keyTokens;
   return (
     guild.roles.cache.find((r) => {
       const t = tokens(r.name);
-      return t.includes(tierToken) && gmTokens.every((g) => t.includes(g));
+      return t.includes(tierToken) && wanted.every((g) => t.includes(g));
     }) || null
   );
 }
