@@ -1,11 +1,10 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const { BRAND } = require("../config");
 
-// Jo commands upar category me manually likhi hain, unke naam (More section me dobara nahi aayengi)
 const LISTED = new Set([
   "register", "profile", "leaderboard", "gamemodes", "testers",
   "setrank", "removerank", "result", "high-result",
-  "addtester", "removetester", "help",
+  "addtester", "removetester", "removeadmin", "help",
 ]);
 
 module.exports = {
@@ -36,20 +35,18 @@ module.exports = {
         name: "🛡️ Staff",
         value:
           "`/addtester <user>` — grant tester permissions\n" +
-          "`/removetester <user>` — revoke tester permissions",
-        "`/removeadmin <user>` — remove from admin staff list\n" +
+          "`/removetester <user>` — revoke tester permissions\n" +
+          "`/removeadmin <user>` — remove from staff list",
       },
     ];
 
-    // Baaki commands automatically (agar bot ne commands client.commands me rakhi hain)
     const registry = interaction.client.commands;
     if (registry && typeof registry.values === "function") {
       const lines = [];
       for (const cmd of registry.values()) {
         const name = cmd?.data?.name;
         if (!name || LISTED.has(name)) continue;
-        const desc = cmd.data.description || "";
-        lines.push(`\`/${name}\` — ${desc}`);
+        lines.push(`\`/${name}\` — ${cmd.data.description || ""}`);
       }
       if (lines.length) {
         let value = lines.join("\n");
