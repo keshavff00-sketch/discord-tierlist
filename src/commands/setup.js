@@ -10,6 +10,7 @@ const {
 const { setupPanelEmbed, queueClosedEmbed, applicationPanelEmbed } = require("../utils/embeds");
 const { GAMEMODES, GAMEMODE_KEYS, gamemodeByKey, LOGO_PATH } = require("../config");
 const { setQueueState } = require("../database");
+const { postTomPanel } = require("../utils/tomPanel");
 
 // Attached to panel messages so the embeds can reference it as
 // "attachment://logo.png" for their thumbnail.
@@ -59,6 +60,17 @@ module.exports = {
       sub
         .setName("application")
         .setDescription("Post the Staff + Tester application panel in this channel.")
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName("tom")
+        .setDescription("Post the Tester of the Month panel in this channel.")
+        .addUserOption((opt) =>
+          opt.setName("user").setDescription("The Tester of the Month").setRequired(true)
+        )
+        .addStringOption((opt) =>
+          opt.setName("note").setDescription("Optional message to show on the panel").setRequired(false)
+        )
     ),
 
   async execute(interaction) {
@@ -67,6 +79,10 @@ module.exports = {
     }
 
     const subcommand = interaction.options.getSubcommand();
+
+    if (subcommand === "tom") {
+      return postTomPanel(interaction);
+    }
 
     if (subcommand === "application") {
       return postApplicationPanel(interaction);
