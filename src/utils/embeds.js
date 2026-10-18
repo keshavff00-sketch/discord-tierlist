@@ -89,16 +89,18 @@ function overallLeaderboardEmbed(entries) {
   return embed;
 }
 
+// NOTE: custom emojis don't render inside embed TITLES, so the gamemode
+// emoji is shown in the description instead.
 function gamemodeLeaderboardEmbed(gamemodeKey, entries) {
   const gm = gamemodeByKey(gamemodeKey);
   const embed = new EmbedBuilder()
     .setColor(0x9b5de5)
-    .setTitle(`${BRAND} — ${gm.emoji} ${gm.name} Leaderboard`)
+    .setTitle(`${BRAND} — ${gm.name} Leaderboard`)
     .setFooter({ text: BRAND })
     .setTimestamp();
 
   if (!entries.length) {
-    embed.setDescription("No players ranked in this gamemode yet.");
+    embed.setDescription(`${gm.emoji} No players ranked in this gamemode yet.`);
     return embed;
   }
 
@@ -109,7 +111,7 @@ function gamemodeLeaderboardEmbed(gamemodeKey, entries) {
     return `${rankIcon} **${p.ign || "Unknown"}** — \`${tier}\` (${p.points} pts)`;
   });
 
-  embed.setDescription(lines.join("\n"));
+  embed.setDescription(`${gm.emoji} **${gm.name}**\n\n` + lines.join("\n"));
   return embed;
 }
 
@@ -174,7 +176,8 @@ function queuePanelEmbed() {
 function ticketEmbed(player, gm, entry, tester, discordAvatarUrl) {
   const embed = new EmbedBuilder()
     .setColor(BRAND_COLOR)
-    .setTitle(`${gm.emoji} ${gm.name} Test — ${player.ign || "Unknown Player"}`)
+    .setTitle(`${gm.name} Test — ${player.ign || "Unknown Player"}`)
+    .setDescription(`${gm.emoji} **${gm.name}**`)
     .addFields(
       { name: "Discord", value: `<@${player.discordId}>`, inline: true },
       { name: "IGN (testing on)", value: entry.username || player.ign || "—", inline: true },
@@ -207,10 +210,10 @@ function ticketEmbed(player, gm, entry, tester, discordAvatarUrl) {
 function queueClosedEmbed(gm, state) {
   const embed = new EmbedBuilder()
     .setColor(0x2b2d31)
-    .setTitle(`${gm.emoji} ${gm.name} Queue Is Now Closed`)
+    .setTitle(`${gm.name} Queue Is Now Closed`)
     .setDescription(
       [
-        `**No ${gm.name} Tester Currently Online**`,
+        `${gm.emoji} **No ${gm.name} Tester Currently Online**`,
         "",
         "This queue has been closed. You will be notified when a new queue is opened.",
       ].join("\n")
@@ -234,10 +237,10 @@ function queueOpenEmbed(gm, state, entries) {
 
   const embed = new EmbedBuilder()
     .setColor(0x3ba55d)
-    .setTitle(`${gm.emoji} ${gm.name} Queue Is Now Open`)
+    .setTitle(`${gm.name} Queue Is Now Open`)
     .setDescription(
       [
-        `**${state.openedBy ? `<@${state.openedBy}>` : "A"} Tester Is Online**`,
+        `${gm.emoji} **${state.openedBy ? `<@${state.openedBy}>` : "A"} Tester Is Online**`,
         "",
         "Click **Join Queue** below to enter, or **Leave Queue** to back out.",
       ].join("\n")
