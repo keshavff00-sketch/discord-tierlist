@@ -16,6 +16,16 @@ const { setQueueState } = require("../database");
 function logoAttachment() {
   return new AttachmentBuilder(LOGO_PATH, { name: "logo.png" });
 }
+
+// "<:sword:123456>" ya "<a:naam:123456>" text ko emoji object me badalta hai.
+// Normal emoji (jaise "🛡️") jaisa hai waisa hi return hota hai.
+function toEmoji(value) {
+  if (!value) return undefined;
+  const m = /^<(a?):([A-Za-z0-9_]+):(\d+)>$/.exec(String(value).trim());
+  if (m) return { id: m[3], name: m[2], animated: m[1] === "a" };
+  return value;
+}
+
 const {
   REGISTER_BUTTON_ID,
   WAITLIST_SELECT_ID,
@@ -84,7 +94,7 @@ async function postWaitlistPanel(interaction) {
       GAMEMODES.map((g) => ({
         label: g.name,
         value: g.key,
-        emoji: g.emoji,
+        emoji: toEmoji(g.emoji),
       }))
     );
 
@@ -145,7 +155,7 @@ async function postApplicationPanel(interaction) {
         label: "Tester Application",
         value: APPLICATION_TYPE_TESTER,
         description: "Click on this option to start the tester application process",
-        emoji: "⚔️",
+        emoji: { name: "tester", id: "1463050629214765076" },
       }
     );
 
