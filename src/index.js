@@ -5,7 +5,15 @@
 require("dotenv").config();
 const fs = require("fs");
 const path = require("path");
-const { Client, GatewayIntentBits, Partials, Collection } = require("discord.js");
+const {
+  Client,
+  GatewayIntentBits,
+  Partials,
+  Collection,
+  REST,
+  Routes,
+  MessageFlags,
+} = require("discord.js");
 const { BRAND } = require("./config");
 const { handlePanelInteraction } = require("./utils/panelHandlers");
 const { handleApplicationInteraction } = require("./utils/applicationHandlers");
@@ -40,17 +48,42 @@ const commandFiles = fs
   .filter((file) => file.endsWith(".js"));
 
 for (const file of commandFiles) {
-  const command = require(path.join(commandsPath, file));
-  if (command?.data?.name) {
-    client.commands.set(command.data.name, command);
-  } else {
-    console.warn(`⚠️  Skipping ${file}: missing "data.name" export.`);
+  try {
+    const command = require(path.join(commandsPath, file));
+    if (command?.data?.name) {
+      client.commands.set(command.data.name, command);
+    } else {
+      console.warn(`⚠️  Skipping ${file}: missing "data.name" export.`);
+    }
+  } catch (err) {
+    console.error(`❌ Failed to load command ${file}:`, err);
   }
 }
 
-client.once("ready", () => {
+// Bot start hote hi saari slash commands Discord me apne aap register ho jati hain.
+async function registerCommands() {
+  const { CLIENT_ID, GUILD_ID, DISCORD_TOKEN } = process.env;
+  const clientId = CLIENT_ID || client.user.id;
+
+  const body = [...client.commands.values()].map((c) => c.data.toJSON());
+  const rest = new REST({ version: "10" }).setToken(DISCORD_TOKEN);
+  const route = GUILD_ID
+    ? Routes.applicationGuildCommands(clientId, GUILD_ID)
+    : Routes.applicationCommands(clientId);
+
+  await rest.put(route, { body });
+  console.log(`✅ Auto-registered ${body.length} commands${GUILD_ID ? ` to guild ${GUILD_ID}` : " globally"}.`);
+}
+
+client.once("clientReady", async () => {
   console.log(`✅ ${BRAND} is online as ${client.user.tag}`);
   client.user.setActivity("Minecraft PvP tests | /help");
+
+  try {
+    await registerCommands();
+  } catch (err) {
+    console.error("❌ Auto-register failed:", err);
+  }
 });
 
 client.on("interactionCreate", async (interaction) => {
@@ -81,12 +114,16 @@ client.on("interactionCreate", async (interaction) => {
     console.error(`Error handling interaction:`, err);
     const errorReply = {
       content: "❌ Something went wrong running that command.",
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     };
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp(errorReply);
-    } else if (interaction.isRepliable()) {
-      await interaction.reply(errorReply);
+    try {
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(errorReply);
+      } else if (interaction.isRepliable()) {
+        await interaction.reply(errorReply);
+      }
+    } catch (e) {
+      console.error("Failed to send error reply:", e);
     }
   }
 });
