@@ -64,14 +64,14 @@ const ALLOW_CRACKED_ACCOUNTS =
 // Bot ke uploaded emojis. Developer Portal -> Emojis se har ek ki ID copy karke yaha daal.
 // ID khali ("") hai toh purana normal emoji use hoga.
 const EMOJI = {
-  CRYSTAL: { name: "crystal", id: "" },
-  SWORD:   { name: "sword",   id: "" },
-  AXE:     { name: "axe",     id: "" },
-  MACE:    { name: "mace",    id: "" },
-  POT:     { name: "pot",     id: "" },
-  NETHPOT: { name: "nethpot", id: "" },
-  UHC:     { name: "uhc",     id: "" },
-  SMP:     { name: "smp",     id: "" },
+  CRYSTAL: { name: "crystal", id: "1552166781542473799" },
+  SWORD:   { name: "sword",   id: "1463043622751436914" },
+  AXE:     { name: "axe",     id: "1463043668893237270" },
+  MACE:    { name: "mace",    id: "1552796949210472548" },
+  POT:     { name: "pot",     id: "1463043475707658410" },
+  NETHPOT: { name: "nethpot", id: "1552781697148395613" },
+  UHC:     { name: "uhc",     id: "1552781651212501196" },
+  SMP:     { name: "smp",     id: "1552790134225764402" },
   // VANILLA: { name: "vanilla", id: "" },
   // CART:    { name: "cart",    id: "" },
   // DIASMP:  { name: "diasmp",  id: "" },
