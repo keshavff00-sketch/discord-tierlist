@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require("discord.js");
+const { SlashCommandBuilder, MessageFlags } = require("discord.js");
 const { getPlayer } = require("../database");
 const { profileEmbed } = require("../utils/embeds");
 
@@ -15,13 +15,21 @@ module.exports = {
 
   async execute(interaction) {
     const target = interaction.options.getUser("user") || interaction.user;
+
+    // Players can only view their own profile.
+    if (target.id !== interaction.user.id) {
+      return interaction.reply({
+        content: "❌ You can only view your own profile.",
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+
     const player = getPlayer(target.id);
 
     if (!player || !player.ign) {
-      const who = target.id === interaction.user.id ? "You haven't" : `**${target.username}** hasn't`;
       return interaction.reply({
-        content: `❌ ${who} registered a Minecraft account yet. Use \`/register\` first.`,
-        ephemeral: true,
+        content: "❌ You haven't registered a Minecraft account yet. Use `/register` first.",
+        flags: MessageFlags.Ephemeral,
       });
     }
 
