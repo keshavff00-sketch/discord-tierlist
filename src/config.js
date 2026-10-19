@@ -56,45 +56,45 @@ const TRIAL_TESTER_ROLE_ID = process.env.TRIAL_TESTER_ROLE_ID || null;
 const ALLOW_CRACKED_ACCOUNTS =
   (process.env.ALLOW_CRACKED_ACCOUNTS || "true").toLowerCase() === "true";
 
+// ------------------------------------------------------------
+// Bot ke uploaded emojis (Developer Portal -> Emojis).
+// "name" aur "id" bilkul wahi hone chahiye jo portal me dikhta hai.
+// ID khali ("") ho toh fallback (normal emoji) use hoga.
+// ------------------------------------------------------------
+const EMOJI = {
+  CRYSTAL: { name: "crystal", id: "1561240865299497042", fallback: "💎" },
+  SWORD:   { name: "sword",   id: "1561240869800255599", fallback: "⚔️" },
+  AXE:     { name: "axe",     id: "1561240867518554142", fallback: "🪓" },
+  MACE:    { name: "MACE1",   id: "1561240863085170769", fallback: "🔨" },
+  POT:     { name: "DiaPot",  id: "1561240876112552026", fallback: "🧪" },
+  NETHPOT: { name: "nethpot", id: "1561240871993606254", fallback: "🔥" },
+  UHC:     { name: "UHC",     id: "1561240874166263979", fallback: "❤️" },
+  SMP:     { name: "SMP",     id: "1561240880562708622", fallback: "🌍" },
+  // CART: { name: "cart", id: "1561240878402633768", fallback: "🧨" },
+};
+
+function emojiFor(key) {
+  const e = EMOJI[key];
+  if (!e) return "🎮";
+  return e.id ? `<:${e.name}:${e.id}>` : e.fallback;
+}
+
 // All tracked PvP gamemodes (this is where new gamemodes get added).
 // Each gamemode can have a "queue" role auto-assigned to a player the
 // moment they join that gamemode's waitlist. Set <KEY>_QUEUE_ROLE_ID in
 // your .env (e.g. NETHPOT_QUEUE_ROLE_ID) to enable it for that gamemode;
 // leave it unset to skip role-assignment for that gamemode.
-// Bot ke uploaded emojis. Developer Portal -> Emojis se har ek ki ID copy karke yaha daal.
-// ID khali ("") hai toh purana normal emoji use hoga.
-const EMOJI = {
-  CRYSTAL: { name: "crystal", id: "1552166781542473799" },
-  SWORD:   { name: "sword",   id: "1463043622751436914" },
-  AXE:     { name: "axe",     id: "1463043668893237270" },
-  MACE:    { name: "mace",    id: "1552796949210472548" },
-  POT:     { name: "pot",     id: "1463043475707658410" },
-  NETHPOT: { name: "nethpot", id: "1552781697148395613" },
-  UHC:     { name: "uhc",     id: "1552781651212501196" },
-  SMP:     { name: "smp",     id: "1552790134225764402" },
-  // VANILLA: { name: "vanilla", id: "" },
-  // CART:    { name: "cart",    id: "" },
-  // DIASMP:  { name: "diasmp",  id: "" },
-};
-
-function emojiFor(key, fallback) {
-  const e = EMOJI[key];
-  return e && e.id ? `<:${e.name}:${e.id}>` : fallback;
-}
-
 const GAMEMODES_BASE = [
-  { key: "CRYSTAL", name: "Crystal PvP", emoji: emojiFor("CRYSTAL", "💎") },
-  { key: "SWORD", name: "Sword PvP", emoji: emojiFor("SWORD", "⚔️") },
-  { key: "AXE", name: "Axe PvP", emoji: emojiFor("AXE", "🪓") },
-  { key: "MACE", name: "Mace PvP", emoji: emojiFor("MACE", "🔨") },
-  { key: "POT", name: "Pot PvP", emoji: emojiFor("POT", "🧪") },
-  { key: "NETHPOT", name: "NethPot PvP", emoji: emojiFor("NETHPOT", "🔥") },
-  { key: "UHC", name: "UHC PvP", emoji: emojiFor("UHC", "❤️") },
-  { key: "SMP", name: "SMP PvP", emoji: emojiFor("SMP", "🌍") },
-  // Naye gamemodes chahiye toh uncomment kar (aur EMOJI me bhi):
-  // { key: "VANILLA", name: "Vanilla PvP", emoji: emojiFor("VANILLA", "🍦") },
-  // { key: "CART", name: "Cart PvP", emoji: emojiFor("CART", "🧨") },
-  // { key: "DIASMP", name: "DiaSMP PvP", emoji: emojiFor("DIASMP", "💠") },
+  { key: "CRYSTAL", name: "Crystal PvP" },
+  { key: "SWORD", name: "Sword PvP" },
+  { key: "AXE", name: "Axe PvP" },
+  { key: "MACE", name: "Mace PvP" }, // newest 1.21 weapon gamemode
+  { key: "POT", name: "Pot PvP" },
+  { key: "NETHPOT", name: "NethPot PvP" },
+  { key: "UHC", name: "UHC PvP" },
+  { key: "SMP", name: "SMP PvP" },
+  // Naye gamemode chahiye toh yaha add kar (aur upar EMOJI me bhi):
+  // { key: "CART", name: "Cart PvP" },
 ];
 
 // Each gamemode can also have its own "tester" role (e.g. SWORD_TESTER_ROLE_ID).
@@ -102,6 +102,8 @@ const GAMEMODES_BASE = [
 // that gamemode's queue. If unset, /pull falls back to the general tester check.
 const GAMEMODES = GAMEMODES_BASE.map((g) => ({
   ...g,
+  emoji: emojiFor(g.key),
+  componentEmoji: emojiFor(g.key), // select menu / buttons ke liye (setup.js)
   queueRoleId: process.env[`${g.key}_QUEUE_ROLE_ID`] || null,
   testerRoleId: process.env[`${g.key}_TESTER_ROLE_ID`] || null,
 }));
