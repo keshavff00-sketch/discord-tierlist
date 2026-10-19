@@ -10,13 +10,57 @@ const {
 const { totalPoints } = require("../database");
 const { headUrl, skinRenderUrl } = require("./mojang");
 
+// ---------------- Emoji helpers ----------------
+// Developer Portal -> Emojis me jo naam aur ID hai wahi yaha hona chahiye.
+const EMOJIS = {
+  CRYSTAL: { name: "crystal", id: "1561240865299497042", fallback: "💎" },
+  SWORD: { name: "sword", id: "1561240869800255599", fallback: "⚔️" },
+  AXE: { name: "axe", id: "1561240867518554142", fallback: "🪓" },
+  MACE: { name: "MACE1", id: "1561240863085170769", fallback: "🔨" },
+  POT: { name: "DiaPot", id: "1561240876112552026", fallback: "🧪" },
+  NETHPOT: { name: "nethpot", id: "1561240871993606254", fallback: "🔥" },
+  UHC: { name: "UHC", id: "1561240874166263979", fallback: "❤️" },
+  SMP: { name: "SMP", id: "1561240880562708622", fallback: "🌍" },
+};
+
+// true  = embed text me custom emoji
+// false = normal emoji + queue panel me emoji ki image (agar custom text me na dikhe)
+const USE_CUSTOM_EMOJI_IN_TEXT = true;
+
+// Purane naam ko sahi gamemode key se jodta hai
+const NAME_ALIASES = { MACE1: "MACE", DIAPOT: "POT" };
+
+function emojiFor(gmOrKey) {
+  const key = String(gmOrKey?.key || gmOrKey).toUpperCase();
+  const e = EMOJIS[key];
+  if (!e) return "🎮";
+  return USE_CUSTOM_EMOJI_IN_TEXT ? `<:${e.name}:${e.id}>` : e.fallback;
+}
+
+// Emoji ki image ka URL (author icon ke liye)
+function gmIconUrl(gm) {
+  const e = EMOJIS[String(gm?.key).toUpperCase()];
+  return e ? `https://cdn.discordapp.com/emojis/${e.id}.png?size=64` : undefined;
+}
+
+// Text me kahin bhi purana/galat custom emoji ho toh sahi wale se badal deta hai
+function fixEmoji(text) {
+  return String(text).replace(/<a?:(\w+):\d+>/g, (m, name) => {
+    const up = name.toUpperCase();
+    const key = NAME_ALIASES[up] || up;
+    return EMOJIS[key] ? emojiFor(key) : "";
+  });
+}
+
+// ---------------- Profile / results ----------------
+
 function profileEmbed(player) {
   const points = totalPoints(player);
   const title = titleForPoints(points);
 
   const tierLines = GAMEMODES.map((g) => {
     const tier = player.tiers?.[g.key];
-    return `${g.emoji} **${g.name}**: ${tier ? `\`${tier}\`` : "_Untested_"}`;
+    return `${emojiFor(g)} **${g.name}**: ${tier ? `\`${tier}\`` : "_Untested_"}`;
   });
 
   const embed = new EmbedBuilder()
@@ -53,7 +97,7 @@ function testResultEmbed({ playerName, uuid, cracked, testerId, gamemodeLabel, r
       { name: "Tester Name:", value: `<@${testerId}>` },
       { name: "Rank Before:", value: rankBefore },
       { name: "Rank Earned:", value: rankEarned },
-      { name: "Game Mode:", value: gamemodeLabel }
+      { name: "Game Mode:", value: fixEmoji(gamemodeLabel) }
     )
     .setFooter({ text: BRAND })
     .setTimestamp();
@@ -65,6 +109,8 @@ function testResultEmbed({ playerName, uuid, cracked, testerId, gamemodeLabel, r
 
   return embed;
 }
+
+// ---------------- Leaderboards / lists ----------------
 
 function overallLeaderboardEmbed(entries) {
   const embed = new EmbedBuilder()
@@ -89,8 +135,6 @@ function overallLeaderboardEmbed(entries) {
   return embed;
 }
 
-// NOTE: custom emojis don't render inside embed TITLES, so the gamemode
-// emoji is shown in the description instead.
 function gamemodeLeaderboardEmbed(gamemodeKey, entries) {
   const gm = gamemodeByKey(gamemodeKey);
   const embed = new EmbedBuilder()
@@ -100,7 +144,7 @@ function gamemodeLeaderboardEmbed(gamemodeKey, entries) {
     .setTimestamp();
 
   if (!entries.length) {
-    embed.setDescription(`${gm.emoji} No players ranked in this gamemode yet.`);
+    embed.setDescription(`${emojiFor(gm)} No players ranked in this gamemode yet.`);
     return embed;
   }
 
@@ -111,12 +155,12 @@ function gamemodeLeaderboardEmbed(gamemodeKey, entries) {
     return `${rankIcon} **${p.ign || "Unknown"}** — \`${tier}\` (${p.points} pts)`;
   });
 
-  embed.setDescription(`${gm.emoji} **${gm.name}**\n\n` + lines.join("\n"));
+  embed.setDescription(`${emojiFor(gm)} **${gm.name}**\n\n` + lines.join("\n"));
   return embed;
 }
 
 function gamemodesListEmbed() {
-  const lines = GAMEMODES.map((g) => `${g.emoji} **${g.name}** (\`${g.key}\`)`);
+  const lines = GAMEMODES.map((g) => `${emojiFor(g)} **${g.name}** (\`${g.key}\`)`);
   return new EmbedBuilder()
     .setColor(0x9b5de5)
     .setTitle(`${BRAND} — Tracked Gamemodes`)
@@ -127,6 +171,8 @@ function gamemodesListEmbed() {
     })
     .setFooter({ text: BRAND });
 }
+
+// ---------------- Panels ----------------
 
 // Bundled logo (assets/logo.png) is attached as "attachment://logo.png"
 // by whichever command sends the message (see commands/setup.js).
@@ -177,7 +223,7 @@ function ticketEmbed(player, gm, entry, tester, discordAvatarUrl) {
   const embed = new EmbedBuilder()
     .setColor(BRAND_COLOR)
     .setTitle(`${gm.name} Test — ${player.ign || "Unknown Player"}`)
-    .setDescription(`${gm.emoji} **${gm.name}**`)
+    .setDescription(`${emojiFor(gm)} **${gm.name}**`)
     .addFields(
       { name: "Discord", value: `<@${player.discordId}>`, inline: true },
       { name: "IGN (testing on)", value: entry.username || player.ign || "—", inline: true },
@@ -213,7 +259,7 @@ function queueClosedEmbed(gm, state) {
     .setTitle(`${gm.name} Queue Is Now Closed`)
     .setDescription(
       [
-        `${gm.emoji} **No ${gm.name} Tester Currently Online**`,
+        `${emojiFor(gm)} **No ${gm.name} Tester Currently Online**`,
         "",
         "This queue has been closed. You will be notified when a new queue is opened.",
       ].join("\n")
@@ -224,6 +270,8 @@ function queueClosedEmbed(gm, state) {
     })
     .setFooter({ text: BRAND })
     .setTimestamp();
+
+  if (!USE_CUSTOM_EMOJI_IN_TEXT) embed.setAuthor({ name: gm.name, iconURL: gmIconUrl(gm) });
 
   return embed;
 }
@@ -240,7 +288,7 @@ function queueOpenEmbed(gm, state, entries) {
     .setTitle(`${gm.name} Queue Is Now Open`)
     .setDescription(
       [
-        `${gm.emoji} **${state.openedBy ? `<@${state.openedBy}>` : "A"} Tester Is Online**`,
+        `${emojiFor(gm)} **${state.openedBy ? `<@${state.openedBy}>` : "A"} Tester Is Online**`,
         "",
         "Click **Join Queue** below to enter, or **Leave Queue** to back out.",
       ].join("\n")
@@ -254,6 +302,8 @@ function queueOpenEmbed(gm, state, entries) {
     )
     .setFooter({ text: BRAND })
     .setTimestamp();
+
+  if (!USE_CUSTOM_EMOJI_IN_TEXT) embed.setAuthor({ name: gm.name, iconURL: gmIconUrl(gm) });
 
   return embed;
 }
