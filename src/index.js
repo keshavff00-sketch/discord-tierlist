@@ -17,7 +17,6 @@ const {
 const { BRAND } = require("./config");
 const { handlePanelInteraction } = require("./utils/panelHandlers");
 const { handleApplicationInteraction } = require("./utils/applicationHandlers");
-const { setupInviteTracker } = require("./utils/inviteTracker");
 
 if (!process.env.DISCORD_TOKEN) {
   console.error(
@@ -30,15 +29,12 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers, // needed to fetch members and assign roles on accept
-    GatewayIntentBits.GuildInvites, // needed by the invite tracker to see invite use-counts
-    GatewayIntentBits.GuildMessages, // needed so the bot can see "-i" typed in server channels
+    GatewayIntentBits.GuildMessages,
     GatewayIntentBits.DirectMessages, // needed so awaitMessages() can hear DM replies
     GatewayIntentBits.MessageContent, // needed to read the text of those DM replies
   ],
   partials: [Partials.Channel, Partials.Message], // DM channels arrive partial until fetched
 });
-
-setupInviteTracker(client); // posts "@user invited @member and has N invites"
 
 client.commands = new Collection();
 
