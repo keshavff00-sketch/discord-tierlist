@@ -31,6 +31,12 @@ function formatDuration(ms) {
   return `${minutes}m`;
 }
 
+// "📍 Queue channel: #nethpot-queue" line (empty if no channel configured).
+// Set <KEY>_QUEUE_CHANNEL_ID in Railway variables (e.g. NETHPOT_QUEUE_CHANNEL_ID).
+function queueChannelNote(gm) {
+  return gm.queueChannelId ? `\n📍 Queue channel: <#${gm.queueChannelId}>` : "";
+}
+
 async function handleRegisterButton(interaction) {
   const modal = new ModalBuilder()
     .setCustomId(REGISTER_MODAL_ID)
@@ -62,10 +68,15 @@ async function handleWaitlistSelect(interaction) {
     });
   }
 
+  // FIX: queue role HAMESHA do jaise hi gamemode select ho — cooldown ho,
+  // queue closed ho, ya modal submit na bhi ho. Isse user ko queue channel
+  // dikhega. await nahi kiya taaki modal 3 second ke andar khul jaye.
+  assignQueueRole(interaction, gm).catch(() => {});
+
   const remaining = waitlistCooldownRemaining(interaction.user.id, gamemodeKey);
   if (remaining > 0) {
     return interaction.reply({
-      content: `⏳ You're on cooldown for **${gm.name}**. Try again in **${formatDuration(remaining)}**.`,
+      content: `⏳ You're on cooldown for **${gm.name}**. Try again in **${formatDuration(remaining)}**.${queueChannelNote(gm)}`,
       ephemeral: true,
     });
   }
@@ -146,17 +157,18 @@ async function handleWaitlistModal(interaction, gamemodeKey) {
   const remaining = waitlistCooldownRemaining(interaction.user.id, gamemodeKey);
   if (remaining > 0) {
     return interaction.reply({
-      content: `⏳ You're on cooldown for **${gm.name}**. Try again in **${formatDuration(remaining)}**.`,
+      content: `⏳ You're on cooldown for **${gm.name}**. Try again in **${formatDuration(remaining)}**.${queueChannelNote(gm)}`,
       ephemeral: true,
     });
   }
 
   joinWaitlist(interaction.user.id, gamemodeKey, { region, username });
 
+  // Role select pe already mil chuka hoga; ye backup hai (aur failure note dikhata hai).
   const roleNote = await assignQueueRole(interaction, gm);
 
   return interaction.reply({
-    content: `✅ Joined the **${gm.name}** waitlist!\n**Region:** ${region}\n**Username:** ${username}\n\nA tester will reach out when it's your turn. You can rejoin this waitlist again in 7 days.${roleNote}`,
+    content: `✅ Joined the **${gm.name}** waitlist!\n**Region:** ${region}\n**Username:** ${username}\n\nA tester will reach out when it's your turn. You can rejoin this waitlist again in 7 days.${queueChannelNote(gm)}${roleNote}`,
     ephemeral: true,
   });
 }
@@ -167,13 +179,16 @@ async function handleWaitlistModal(interaction, gamemodeKey) {
 // Never blocks the waitlist join on a role-assignment failure — it just
 // appends a short note to the reply so the admin can fix permissions/ID.
 async function assignQueueRole(interaction, gm) {
-  if (!gm.queueRoleId) return "";
+  if (!gm.queueRoleId) {
+    console.warn(`[queue role] ${gm.key}_QUEUE_ROLE_ID is not set — skipping role assignment.`);
+    return "";
+  }
 
   try {
     const member = interaction.member ?? (await interaction.guild.members.fetch(interaction.user.id));
     if (member.roles.cache.has(gm.queueRoleId)) return "";
 
-    await member.roles.add(gm.queueRoleId);
+    await member.roles.add(gm.queueRoleId, `Selected ${gm.name} on waitlist panel`);
     return "";
   } catch (err) {
     console.error(`[queue role] Failed to assign role ${gm.queueRoleId} for ${gm.key}:`, err.message);
