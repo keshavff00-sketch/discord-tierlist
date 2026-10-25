@@ -8,12 +8,16 @@ const fs = require("fs");
 const path = require("path");
 const { GAMEMODE_KEYS, tierPoints, WAITLIST_COOLDOWN_MS } = require("./config");
 
-const DATA_DIR = path.join(__dirname, "..", "data");
+// FIX: Railway volume ke liye DATA_DIR env variable use karo (e.g. /appdata).
+// Agar set nahi hai (local PC), to purana ../data folder use hoga.
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "..", "data");
 const PLAYERS_FILE = path.join(DATA_DIR, "players.json");
 const TESTERS_FILE = path.join(DATA_DIR, "testers.json");
 const WAITLIST_FILE = path.join(DATA_DIR, "waitlist.json");
 const APPLICATIONS_FILE = path.join(DATA_DIR, "applications.json");
 const QUEUE_STATE_FILE = path.join(DATA_DIR, "queueState.json");
+
+console.log(`[database] Using data directory: ${DATA_DIR}`);
 
 function ensureFile(file, fallback) {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -26,8 +30,12 @@ function readJSON(file) {
   return JSON.parse(fs.readFileSync(file, "utf-8"));
 }
 
+// Atomic write: pehle temp file me likho, phir rename. Crash/restart ke
+// beech file adhoori likhi reh kar corrupt nahi hogi.
 function writeJSON(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+  const tmp = `${file}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(data, null, 2));
+  fs.renameSync(tmp, file);
 }
 
 ensureFile(PLAYERS_FILE, {});
@@ -288,6 +296,7 @@ function addAdmin(discordId) {
   writeJSON(TESTERS_FILE, staff);
   return staff;
 }
+
 function removeAdmin(discordId) {
   const staff = getStaff();
   staff.admins = staff.admins.filter((id) => id !== discordId);
@@ -374,6 +383,7 @@ module.exports = {
   addTester,
   removeTester,
   addAdmin,
+  removeAdmin,
   saveApplication,
   getApplications,
   getApplicationById,
