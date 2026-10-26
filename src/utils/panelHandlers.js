@@ -317,7 +317,7 @@ async function handleWaitlistModal(interaction, gamemodeKey) {
   await refreshQueuePanel(interaction.guild, gm);
 
   return interaction.reply({
-    content: `✅ Joined the **${gm.name}** waitlist!\n**Region:** ${region}\n**Username:** ${username}\n\nA tester will reach out when it's your turn. You can rejoin this waitlist again in 7 days.${queueChannelNote(gm)}${roleNote}`,
+    content: `✅ Joined the **${gm.name}** waitlist!\n**Region:** ${region}\n**Username:** ${username}\n\nA tester will reach out when it's your turn. After your test is done, you can rejoin this gamemode's waitlist in 12 hours.${queueChannelNote(gm)}${roleNote}`,
     ephemeral: true,
   });
 }
