@@ -144,6 +144,13 @@ async function handleWaitlistSelect(interaction) {
     return interaction.reply({ content: "❌ Unknown gamemode.", ephemeral: true });
   }
 
+  // Dropdown ko reset karo taaki selected option (jaise "Sword PvP") panel par
+  // dikhta na rahe. Message ko same components ke saath edit karne se Discord
+  // selection hata deta hai. await nahi kiya taaki modal 3 second ke andar khul jaye.
+  interaction.message
+    .edit({ components: interaction.message.components })
+    .catch((err) => console.error("[waitlist select] Failed to reset dropdown:", err.message));
+
   // FIX: queue role HAMESHA do jaise hi gamemode select ho — queue closed ho,
   // cooldown ho, ya modal submit na bhi ho. Isse player queue channel dekh
   // sakta hai. await nahi kiya taaki modal 3 second ke andar khul jaye.
