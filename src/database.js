@@ -6,7 +6,10 @@
 
 const fs = require("fs");
 const path = require("path");
-const { GAMEMODE_KEYS, tierPoints, WAITLIST_COOLDOWN_MS } = require("./config");
+const { GAMEMODE_KEYS, tierPoints } = require("./config");
+
+// Test complete hone ke baad us gamemode ka cooldown (12 ghante).
+const TEST_COOLDOWN_MS = 12 * 60 * 60 * 1000;
 
 // FIX: Railway volume ke liye DATA_DIR env variable use karo (e.g. /appdata).
 // Agar set nahi hai (local PC), to purana ../data folder use hoga.
@@ -16,6 +19,7 @@ const TESTERS_FILE = path.join(DATA_DIR, "testers.json");
 const WAITLIST_FILE = path.join(DATA_DIR, "waitlist.json");
 const APPLICATIONS_FILE = path.join(DATA_DIR, "applications.json");
 const QUEUE_STATE_FILE = path.join(DATA_DIR, "queueState.json");
+const COOLDOWNS_FILE = path.join(DATA_DIR, "cooldowns.json");
 
 console.log(`[database] Using data directory: ${DATA_DIR}`);
 
@@ -43,6 +47,7 @@ ensureFile(TESTERS_FILE, { admins: [], testers: [] });
 ensureFile(WAITLIST_FILE, {});
 ensureFile(APPLICATIONS_FILE, []);
 ensureFile(QUEUE_STATE_FILE, {});
+ensureFile(COOLDOWNS_FILE, {});
 
 // ---------------- Players ----------------
 // players.json shape:
@@ -73,6 +78,8 @@ function upsertPlayer(discordId, patch) {
   return merged;
 }
 
+// Tier/result dete hi (test complete) us gamemode ka 12 ghante ka cooldown
+// lag jata hai — sirf usi gamemode ka, baaki gamemodes par koi asar nahi.
 function setTier(discordId, gamemodeKey, tier) {
   const players = getAllPlayers();
   const existing =
@@ -89,6 +96,9 @@ function setTier(discordId, gamemodeKey, tier) {
   existing.updatedAt = Date.now();
   players[discordId] = existing;
   writeJSON(PLAYERS_FILE, players);
+
+  setTestCooldown(discordId, gamemodeKey);
+
   return existing;
 }
 
@@ -130,6 +140,20 @@ function gamemodeLeaderboard(gamemodeKey, limit = 10) {
     .slice(0, limit);
 }
 
+// ---------------- Test Cooldowns (per player, per gamemode) ----------------
+// cooldowns.json shape:
+// { [discordId]: { [gamemodeKey]: expiresAtTimestamp } }
+
+function setTestCooldown(discordId, gamemodeKey, ms = TEST_COOLDOWN_MS) {
+  const cooldowns = readJSON(COOLDOWNS_FILE);
+  const key = gamemodeKey.toUpperCase();
+  const existing = cooldowns[discordId] || {};
+  existing[key] = Date.now() + ms;
+  cooldowns[discordId] = existing;
+  writeJSON(COOLDOWNS_FILE, cooldowns);
+  return existing[key];
+}
+
 // ---------------- Evaluation Testing Waitlist ----------------
 // waitlist.json shape:
 // { [discordId]: { [gamemodeKey]: { region, username, joinedAt } } }
@@ -139,11 +163,12 @@ function getAllWaitlist() {
 }
 
 // Returns remaining cooldown in ms (0 if none / expired).
+// Ab sirf test-complete wala cooldown (12h, per gamemode) check hota hai.
 function waitlistCooldownRemaining(discordId, gamemodeKey) {
-  const waitlist = getAllWaitlist();
-  const entry = waitlist[discordId]?.[gamemodeKey.toUpperCase()];
-  if (!entry) return 0;
-  const remaining = entry.joinedAt + WAITLIST_COOLDOWN_MS - Date.now();
+  const cooldowns = readJSON(COOLDOWNS_FILE);
+  const expiresAt = cooldowns[discordId]?.[gamemodeKey.toUpperCase()];
+  if (!expiresAt) return 0;
+  const remaining = expiresAt - Date.now();
   return remaining > 0 ? remaining : 0;
 }
 
@@ -369,6 +394,7 @@ module.exports = {
   gamemodeLeaderboard,
   getAllWaitlist,
   waitlistCooldownRemaining,
+  setTestCooldown,
   joinWaitlist,
   pullNextFromWaitlist,
   waitlistCount,
