@@ -12,7 +12,7 @@ const { GAMEMODE_KEYS, gamemodeByKey } = require("../config");
 const { getQueueState, setQueueState, waitlistEntries, clearWaitlist } = require("../database");
 const { canTestGamemode } = require("../utils/permissions");
 const { queueOpenEmbed, queueClosedEmbed } = require("../utils/embeds");
-const { buildJoinLeaveRow, removeQueueRole } = require("../utils/panelHandlers");
+const { buildJoinLeaveRow } = require("../utils/panelHandlers");
 
 // Fetches the panel message a gamemode's queue state points at.
 // Returns null (and lets the caller reply with an error) if it's
@@ -114,17 +114,19 @@ module.exports = {
       return interaction.editReply(`✅ **${gm.name}** queue is now **open**.`);
     }
 
-    // close — also empty the waitlist so it doesn't instantly refill
-    // with leftover entries the next time this gamemode's queue opens.
+    // close — waitlist khali kar do taaki agli baar open hone par purane
+    // entries ek saath na aa jayein.
+    //
+    // FIX: queue role ab yahan se REMOVE NAHI hota. Pehle close par sabka
+    // role hata diya jata tha, isliye players queue channel dekh nahi pate
+    // the. Ab role bana rehta hai, to closed queue me bhi channel dikhta hai
+    // aur open hone par role ping se notification milta hai.
     const newState = setQueueState(gm.key, {
       open: false,
       closedAt: Date.now(),
     });
 
     const clearedIds = clearWaitlist(gm.key);
-    for (const discordId of clearedIds) {
-      await removeQueueRole(interaction.guild, discordId, gm).catch(() => {});
-    }
 
     await message.edit({
       embeds: [queueClosedEmbed(gm, newState)],
@@ -133,7 +135,7 @@ module.exports = {
 
     return interaction.editReply(
       `✅ **${gm.name}** queue is now **closed**.${
-        clearedIds.length > 0 ? ` Cleared **${clearedIds.length}** player(s) from the queue.` : ""
+        clearedIds.length > 0 ? ` Cleared **${clearedIds.length}** player(s) from the queue (they keep their queue role).` : ""
       }`
     );
   },
