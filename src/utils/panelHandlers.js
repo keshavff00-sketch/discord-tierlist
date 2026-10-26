@@ -151,10 +151,11 @@ async function handleWaitlistSelect(interaction) {
 
   // A dedicated /setup queue panel exists and is closed for this
   // gamemode — join nahi hoga, par role + channel link mil jayega.
+  // (First line "queue is currently closed" hata di gayi hai.)
   const state = getQueueState(gm.key);
   if (state && !state.open) {
     return interaction.reply({
-      content: `❌ The **${gm.name}** queue is currently closed. You'll be notified when it opens.\n✅ You've been given the **${gm.name}** queue role so you can see the queue channel.${queueChannelNote(gm)}`,
+      content: `✅ You've been given the **${gm.name}** queue role so you can see the queue channel.${queueChannelNote(gm)}`,
       ephemeral: true,
     });
   }
