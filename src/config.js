@@ -62,15 +62,19 @@ const ALLOW_CRACKED_ACCOUNTS =
 // ID khali ("") ho toh fallback (normal emoji) use hoga.
 // ------------------------------------------------------------
 const EMOJI = {
-  CRYSTAL: { name: "crystal", id: "1561240865299497042", fallback: "💎" },
-  SWORD:   { name: "sword",   id: "1561240869800255599", fallback: "⚔️" },
-  AXE:     { name: "axe",     id: "1561240867518554142", fallback: "🪓" },
-  MACE:    { name: "MACE1",   id: "1561240863085170769", fallback: "🔨" },
-  POT:     { name: "DiaPot",  id: "1561240876112552026", fallback: "🧪" },
-  NETHPOT: { name: "nethpot", id: "1561240871993606254", fallback: "🔥" },
-  UHC:     { name: "UHC",     id: "1561240874166263979", fallback: "❤️" },
-  SMP:     { name: "SMP",     id: "1561240880562708622", fallback: "🌍" },
-  // CART: { name: "cart", id: "1561240878402633768", fallback: "🧨" },
+  CRYSTAL:   { name: "crystal",   id: "1561240865299497042", fallback: "💎" },
+  SWORD:     { name: "sword",     id: "1561240869800255599", fallback: "⚔️" },
+  AXE:       { name: "axe",       id: "1561240867518554142", fallback: "🪓" },
+  MACE:      { name: "MACE1",     id: "1561240863085170769", fallback: "🔨" },
+  POT:       { name: "DiaPot",    id: "1561240876112552026", fallback: "🧪" },
+  NETHPOT:   { name: "nethpot",   id: "1561240871993606254", fallback: "🔥" },
+  UHC:       { name: "UHC",       id: "1561240874166263979", fallback: "❤️" },
+  SMP:       { name: "SMP",       id: "1561240880562708622", fallback: "🌍" },
+  CART:      { name: "cart",      id: "1561240878402633768", fallback: "🧨" },
+  // Spear Mace aur Dia SMP ke emojis Developer Portal me upload karke
+  // yaha "id" bhar dena. Tab tak fallback emoji dikhega.
+  SPEARMACE: { name: "spearmace", id: "", fallback: "🔱" },
+  DIASMP:    { name: "diasmp",    id: "", fallback: "💠" },
 };
 
 function emojiFor(key) {
@@ -93,8 +97,12 @@ const GAMEMODES_BASE = [
   { key: "NETHPOT", name: "NethPot PvP" },
   { key: "UHC", name: "UHC PvP" },
   { key: "SMP", name: "SMP PvP" },
-  // Naye gamemode chahiye toh yaha add kar (aur upar EMOJI me bhi):
-  // { key: "CART", name: "Cart PvP" },
+  { key: "CART", name: "Cart PvP" },
+  { key: "SPEARMACE", name: "Spear Mace PvP" },
+  { key: "DIASMP", name: "Dia SMP PvP" },
+  // Naye gamemode chahiye toh yaha add kar (aur upar EMOJI me bhi).
+  // Key hamesha CAPITAL, bina space/underscore ke — Railway variable
+  // names (<KEY>_QUEUE_ROLE_ID etc.) isi se bante hain.
 ];
 
 // Each gamemode can also have its own "tester" role (e.g. SWORD_TESTER_ROLE_ID).
@@ -105,6 +113,7 @@ const GAMEMODES = GAMEMODES_BASE.map((g) => ({
   emoji: emojiFor(g.key),
   componentEmoji: emojiFor(g.key), // select menu / buttons ke liye (setup.js)
   queueRoleId: process.env[`${g.key}_QUEUE_ROLE_ID`] || null,
+  queueChannelId: process.env[`${g.key}_QUEUE_CHANNEL_ID`] || null,
   testerRoleId: process.env[`${g.key}_TESTER_ROLE_ID`] || null,
 }));
 
