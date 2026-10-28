@@ -12,6 +12,7 @@ const { headUrl, skinRenderUrl } = require("./mojang");
 
 // ---------------- Emoji helpers ----------------
 // Developer Portal -> Emojis me jo naam aur ID hai wahi yaha hona chahiye.
+// NOTE: config.js ke EMOJI block se bhi ye same rakhna (dono jagah).
 const EMOJIS = {
   CRYSTAL: { name: "crystal", id: "1561240865299497042", fallback: "💎" },
   SWORD: { name: "sword", id: "1561240869800255599", fallback: "⚔️" },
@@ -21,14 +22,22 @@ const EMOJIS = {
   NETHPOT: { name: "nethpot", id: "1561240871993606254", fallback: "🔥" },
   UHC: { name: "UHC", id: "1561240874166263979", fallback: "❤️" },
   SMP: { name: "SMP", id: "1561240880562708622", fallback: "🌍" },
+  // Naye gamemodes (pehle yaha missing the, isliye queue embed me 🎮 dikhta tha)
+  CART: { name: "cart", id: "1561240878402633768", fallback: "🧨" },
+  SPEARMACE: { name: "spear", id: "1565018776049815583", fallback: "🔱" },
+  DIASMP: { name: "diasmp", id: "1565018798959104130", fallback: "💠" },
 };
 
 // true  = embed text me custom emoji
 // false = normal emoji + queue panel me emoji ki image (agar custom text me na dikhe)
 const USE_CUSTOM_EMOJI_IN_TEXT = true;
 
-// Purane naam ko sahi gamemode key se jodta hai
-const NAME_ALIASES = { MACE1: "MACE", DIAPOT: "POT" };
+// Purane/alag naam ko sahi gamemode key se jodta hai
+const NAME_ALIASES = {
+  MACE1: "MACE",
+  DIAPOT: "POT",
+  SPEAR: "SPEARMACE", // portal me emoji ka naam "spear" hai
+};
 
 function emojiFor(gmOrKey) {
   const key = String(gmOrKey?.key || gmOrKey).toUpperCase();
