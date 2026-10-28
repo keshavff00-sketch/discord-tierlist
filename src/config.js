@@ -73,8 +73,8 @@ const EMOJI = {
   CART:      { name: "cart",      id: "1561240878402633768", fallback: "🧨" },
   // Spear Mace aur Dia SMP ke emojis Developer Portal me upload karke
   // yaha "id" bhar dena. Tab tak fallback emoji dikhega.
-  SPEARMACE: { name: "spearmace", id: "1564650897252814919", fallback: "🔱" },
-  DIASMP:    { name: "diasmp",    id: "1564651662264500224", fallback: "💠" },
+  SPEARMACE: { name: "spear",     id: "1565018776049815583", fallback: "🔱" },
+  DIASMP:    { name: "diasmp",    id: "1565018798959104130", fallback: "💠" },
 };
 
 function emojiFor(key) {
