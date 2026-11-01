@@ -144,13 +144,6 @@ async function handleWaitlistSelect(interaction) {
     return interaction.reply({ content: "❌ Unknown gamemode.", ephemeral: true });
   }
 
-  // Dropdown ko reset karo taaki selected option (jaise "Sword PvP") panel par
-  // dikhta na rahe. Message ko same components ke saath edit karne se Discord
-  // selection hata deta hai. await nahi kiya taaki modal 3 second ke andar khul jaye.
-  interaction.message
-    .edit({ components: interaction.message.components })
-    .catch((err) => console.error("[waitlist select] Failed to reset dropdown:", err.message));
-
   // FIX: queue role HAMESHA do jaise hi gamemode select ho — queue closed ho,
   // cooldown ho, ya modal submit na bhi ho. Isse player queue channel dekh
   // sakta hai. await nahi kiya taaki modal 3 second ke andar khul jaye.
@@ -158,11 +151,10 @@ async function handleWaitlistSelect(interaction) {
 
   // A dedicated /setup queue panel exists and is closed for this
   // gamemode — join nahi hoga, par role + channel link mil jayega.
-  // (First line "queue is currently closed" hata di gayi hai.)
   const state = getQueueState(gm.key);
   if (state && !state.open) {
     return interaction.reply({
-      content: `✅ You've been given the **${gm.name}** queue role so you can see the queue channel.${queueChannelNote(gm)}`,
+      content: `❌ The **${gm.name}** queue is currently closed. You'll be notified when it opens.\n✅ You've been given the **${gm.name}** queue role so you can see the queue channel.${queueChannelNote(gm)}`,
       ephemeral: true,
     });
   }
@@ -313,11 +305,15 @@ async function handleWaitlistModal(interaction, gamemodeKey) {
 
   joinWaitlist(interaction.user.id, gamemodeKey, { region, username });
 
+  // Region player profile me bhi save karo, taaki /result embed me dikha sakein
+  // (waitlist entry /pull par delete ho jati hai).
+  upsertPlayer(interaction.user.id, { region });
+
   const roleNote = await assignQueueRole(interaction, gm);
   await refreshQueuePanel(interaction.guild, gm);
 
   return interaction.reply({
-    content: `✅ Joined the **${gm.name}** waitlist!\n**Region:** ${region}\n**Username:** ${username}\n\nA tester will reach out when it's your turn. After your test is done, you can rejoin this gamemode's waitlist in 12 hours.${queueChannelNote(gm)}${roleNote}`,
+    content: `✅ Joined the **${gm.name}** waitlist!\n**Region:** ${region}\n**Username:** ${username}\n\nA tester will reach out when it's your turn. You can rejoin this waitlist again in 7 days.${queueChannelNote(gm)}${roleNote}`,
     ephemeral: true,
   });
 }
