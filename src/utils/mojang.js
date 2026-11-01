@@ -61,12 +61,16 @@ function headUrl(uuid, size = 128) {
   return `https://crafatar.com/renders/head/${uuid}?size=${size}&overlay`;
 }
 
-// 3D bust render (head + torso + arms) via mc-api.io. Premium accounts
-// get their real skin; cracked accounts always get the default Steve
-// skin, since an offline UUID has no real skin to fetch.
-function skinRenderUrl({ playerName, cracked }, size = 256) {
+// 3D body render via mc-heads.net. Premium accounts get their real skin;
+// cracked accounts always get the default Steve skin, since an offline
+// UUID has no real skin to fetch.
+//
+// FIX: pehle mc-api.io use hota tha jo ab image nahi de raha tha, isliye
+// embed me skin/Steve gayab ho gaya. Agar ye service bhi kabhi band ho,
+// sirf yahi ek line badalni hai (baaki code isi function se URL leta hai).
+function skinRenderUrl({ playerName, cracked }) {
   const name = cracked || !playerName ? "MHF_Steve" : playerName;
-  return `https://mc-api.io/render/BUST/${encodeURIComponent(name)}/JAVA?size=${size}`;
+  return `https://mc-heads.net/body/${encodeURIComponent(name)}/right`;
 }
 
 module.exports = { lookupUUID, headUrl, offlineUUID, skinRenderUrl };
