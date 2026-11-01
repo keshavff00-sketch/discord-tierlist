@@ -6,7 +6,8 @@
 // ============================================================
 
 const { SlashCommandBuilder } = require("discord.js");
-const { GAMEMODE_KEYS, gamemodeByKey, HIGH_TIERS, HIGH_RESULT_CHANNEL_ID } = require("../config");
+const { GAMEMODE_KEYS, gamemodeByKey, HIGH_TIERS, HIGH_RESULT_CHANNEL_ID, REGIONS } = require("../config");
+const { getPlayer, upsertPlayer } = require("../database");
 const { isTesterMember } = require("../utils/permissions");
 const { lookupUUID } = require("../utils/mojang");
 const { testResultEmbed } = require("../utils/embeds");
@@ -46,6 +47,14 @@ module.exports = {
         .setDescription("The rank they earned in this test (HT3 and above)")
         .setRequired(true)
         .addChoices(...HIGH_TIERS.map((t) => ({ name: t, value: t })))
+    )
+    // Optional options hamesha required wale ke baad aate hain.
+    .addStringOption((opt) =>
+      opt
+        .setName("region")
+        .setDescription("Player's region (leave empty to use the region they queued with)")
+        .setRequired(false)
+        .addChoices(...REGIONS.map((r) => ({ name: r, value: r })))
     ),
 
   async execute(interaction) {
@@ -69,9 +78,18 @@ module.exports = {
     const gamemodeKey = interaction.options.getString("gamemode", true);
     const rankBeforeRaw = interaction.options.getString("rank_before", true);
     const rankEarned = interaction.options.getString("rank_earned", true);
+    const regionOption = interaction.options.getString("region");
 
     const gamemode = gamemodeByKey(gamemodeKey);
     const rankBefore = rankBeforeRaw === "UNRANKED" ? "Unranked" : rankBeforeRaw;
+
+    // Tester ne region di to wahi, warna player ki saved region (queue join
+    // karte waqt save hoti hai). Dono na hon to embed me "Unknown" dikhega.
+    const savedPlayer = getPlayer(target.id);
+    const region = regionOption || savedPlayer?.region || null;
+    if (regionOption) {
+      upsertPlayer(target.id, { region: regionOption });
+    }
 
     await interaction.deferReply({ ephemeral: true });
 
@@ -105,6 +123,7 @@ module.exports = {
       gamemodeLabel: gamemode ? `${gamemode.emoji} ${gamemode.name}` : gamemodeKey,
       rankBefore,
       rankEarned,
+      region,
     });
 
     try {
@@ -116,7 +135,7 @@ module.exports = {
       });
     }
 
-        const roleNote = await assignTierRole(
+    const roleNote = await assignTierRole(
       interaction.guild,
       target.id,
       gamemodeKey,
