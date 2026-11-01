@@ -97,12 +97,13 @@ function profileEmbed(player) {
 // finishes testing a player.
 const RESULT_EMBED_COLOR = 0xf5c518; // gold
 
-function testResultEmbed({ playerName, uuid, cracked, testerId, gamemodeLabel, rankBefore, rankEarned }) {
+function testResultEmbed({ playerName, uuid, cracked, testerId, gamemodeLabel, rankBefore, rankEarned, region }) {
   const embed = new EmbedBuilder()
     .setColor(RESULT_EMBED_COLOR)
     .setTitle(`${playerName}'s Test Results 🏆`)
     .addFields(
       { name: "Player Name:", value: playerName },
+      { name: "Region:", value: region || "Unknown" },
       { name: "Tester Name:", value: `<@${testerId}>` },
       { name: "Rank Before:", value: rankBefore },
       { name: "Rank Earned:", value: rankEarned },
