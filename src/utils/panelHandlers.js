@@ -37,6 +37,7 @@ const {
 } = require("./panelIds");
 const { queueOpenEmbed } = require("./embeds");
 const { RULESET_BUTTON_PREFIX, rulesetEmbed } = require("./rulesets");
+const { RUBRIC_BUTTON_PREFIX, rubricEmbed } = require("./rubrics");
 
 // Testers/admins ko waitlist cooldown nahi lagta (wo khud test karne/dekhne ke
 // liye queue use karte hain). Normal players ke liye pehle jaisa cooldown.
@@ -396,6 +397,16 @@ async function handleRulesetButton(interaction, gamemodeKey) {
   return interaction.reply({ embeds: [rulesetEmbed(gm)], ephemeral: true });
 }
 
+// Rubrics panel (/rubrics) ka gamemode button — us gamemode ke testing rubrics
+// sirf click karne wale ko dikhte hain.
+async function handleRubricButton(interaction, gamemodeKey) {
+  const gm = gamemodeByKey(gamemodeKey);
+  if (!gm) {
+    return interaction.reply({ content: "❌ Unknown gamemode.", ephemeral: true });
+  }
+  return interaction.reply({ embeds: [rubricEmbed(gm)], ephemeral: true });
+}
+
 async function handlePanelInteraction(interaction) {
   if (interaction.isButton() && interaction.customId === REGISTER_BUTTON_ID) {
     return handleRegisterButton(interaction);
@@ -418,6 +429,11 @@ async function handlePanelInteraction(interaction) {
   if (interaction.isButton() && interaction.customId.startsWith(RULESET_BUTTON_PREFIX)) {
     const gamemodeKey = interaction.customId.slice(RULESET_BUTTON_PREFIX.length);
     return handleRulesetButton(interaction, gamemodeKey);
+  }
+
+  if (interaction.isButton() && interaction.customId.startsWith(RUBRIC_BUTTON_PREFIX)) {
+    const gamemodeKey = interaction.customId.slice(RUBRIC_BUTTON_PREFIX.length);
+    return handleRubricButton(interaction, gamemodeKey);
   }
 
   if (interaction.isButton() && interaction.customId === TICKET_CLOSE_BUTTON_ID) {
