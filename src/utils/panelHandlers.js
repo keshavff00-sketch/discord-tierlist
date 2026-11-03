@@ -36,6 +36,7 @@ const {
   TICKET_CLOSE_BUTTON_ID,
 } = require("./panelIds");
 const { queueOpenEmbed } = require("./embeds");
+const { RULESET_BUTTON_PREFIX, rulesetEmbed } = require("./rulesets");
 
 // Testers/admins ko waitlist cooldown nahi lagta (wo khud test karne/dekhne ke
 // liye queue use karte hain). Normal players ke liye pehle jaisa cooldown.
@@ -385,6 +386,16 @@ async function handleTicketCloseButton(interaction) {
   }, 5000);
 }
 
+// Ruleset panel (/ruleset) ka gamemode button — us gamemode ke allowed/banned
+// mods sirf click karne wale ko dikhte hain.
+async function handleRulesetButton(interaction, gamemodeKey) {
+  const gm = gamemodeByKey(gamemodeKey);
+  if (!gm) {
+    return interaction.reply({ content: "❌ Unknown gamemode.", ephemeral: true });
+  }
+  return interaction.reply({ embeds: [rulesetEmbed(gm)], ephemeral: true });
+}
+
 async function handlePanelInteraction(interaction) {
   if (interaction.isButton() && interaction.customId === REGISTER_BUTTON_ID) {
     return handleRegisterButton(interaction);
@@ -402,6 +413,11 @@ async function handlePanelInteraction(interaction) {
   if (interaction.isButton() && interaction.customId.startsWith(QUEUE_LEAVE_PREFIX)) {
     const gamemodeKey = interaction.customId.slice(QUEUE_LEAVE_PREFIX.length);
     return handleQueueLeaveButton(interaction, gamemodeKey);
+  }
+
+  if (interaction.isButton() && interaction.customId.startsWith(RULESET_BUTTON_PREFIX)) {
+    const gamemodeKey = interaction.customId.slice(RULESET_BUTTON_PREFIX.length);
+    return handleRulesetButton(interaction, gamemodeKey);
   }
 
   if (interaction.isButton() && interaction.customId === TICKET_CLOSE_BUTTON_ID) {
