@@ -37,6 +37,13 @@ const {
 } = require("./panelIds");
 const { queueOpenEmbed } = require("./embeds");
 
+// Testers/admins ko waitlist cooldown nahi lagta (wo khud test karne/dekhne ke
+// liye queue use karte hain). Normal players ke liye pehle jaisa cooldown.
+function cooldownRemainingFor(interaction, gamemodeKey) {
+  if (isTesterMember(interaction)) return 0;
+  return waitlistCooldownRemaining(interaction.user.id, gamemodeKey);
+}
+
 function formatDuration(ms) {
   const days = Math.floor(ms / (24 * 60 * 60 * 1000));
   const hours = Math.floor((ms % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
@@ -167,7 +174,7 @@ async function handleWaitlistSelect(interaction) {
     });
   }
 
-  const remaining = waitlistCooldownRemaining(interaction.user.id, gamemodeKey);
+  const remaining = cooldownRemainingFor(interaction, gamemodeKey);
   if (remaining > 0) {
     return interaction.reply({
       content: `⏳ You're on cooldown for **${gm.name}**. Try again in **${formatDuration(remaining)}**.${queueChannelNote(gm)}`,
@@ -202,7 +209,7 @@ async function handleQueueJoinButton(interaction, gamemodeKey) {
     });
   }
 
-  const remaining = waitlistCooldownRemaining(interaction.user.id, gamemodeKey);
+  const remaining = cooldownRemainingFor(interaction, gamemodeKey);
   if (remaining > 0) {
     return interaction.reply({
       content: `⏳ You're on cooldown for **${gm.name}**. Try again in **${formatDuration(remaining)}**.`,
@@ -295,7 +302,7 @@ async function handleWaitlistModal(interaction, gamemodeKey) {
   }
 
   // Re-check cooldown in case of a race between select and modal submit.
-  const remaining = waitlistCooldownRemaining(interaction.user.id, gamemodeKey);
+  const remaining = cooldownRemainingFor(interaction, gamemodeKey);
   if (remaining > 0) {
     return interaction.reply({
       content: `⏳ You're on cooldown for **${gm.name}**. Try again in **${formatDuration(remaining)}**.${queueChannelNote(gm)}`,
