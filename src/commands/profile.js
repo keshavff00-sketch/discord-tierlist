@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, MessageFlags } = require("discord.js");
-const { getPlayer } = require("../database");
+const { getPlayer, isAdmin } = require("../database");
 const { profileEmbed } = require("../utils/embeds");
 
 module.exports = {
@@ -15,9 +15,14 @@ module.exports = {
 
   async execute(interaction) {
     const target = interaction.options.getUser("user") || interaction.user;
+    const viewingOther = target.id !== interaction.user.id;
 
-    // Players can only view their own profile.
-    if (target.id !== interaction.user.id) {
+    // Owners (bot admins from testers.json, or the Discord server owner)
+    // can view anyone's profile. Everyone else only sees their own.
+    const isOwner =
+      isAdmin(interaction.user.id) || interaction.guild?.ownerId === interaction.user.id;
+
+    if (viewingOther && !isOwner) {
       return interaction.reply({
         content: "❌ You can only view your own profile.",
         flags: MessageFlags.Ephemeral,
@@ -28,7 +33,9 @@ module.exports = {
 
     if (!player || !player.ign) {
       return interaction.reply({
-        content: "❌ You haven't registered a Minecraft account yet. Use `/register` first.",
+        content: viewingOther
+          ? `❌ <@${target.id}> hasn't registered a Minecraft account yet.`
+          : "❌ You haven't registered a Minecraft account yet. Use `/register` first.",
         flags: MessageFlags.Ephemeral,
       });
     }
