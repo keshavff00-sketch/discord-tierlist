@@ -36,15 +36,7 @@ const {
   TICKET_CLOSE_BUTTON_ID,
 } = require("./panelIds");
 const { queueOpenEmbed } = require("./embeds");
-const { RULESET_BUTTON_PREFIX, rulesetEmbed } = require("./rulesets");
-const { RUBRIC_BUTTON_PREFIX, rubricEmbed } = require("./rubrics");
-
-// Testers/admins ko waitlist cooldown nahi lagta (wo khud test karne/dekhne ke
-// liye queue use karte hain). Normal players ke liye pehle jaisa cooldown.
-function cooldownRemainingFor(interaction, gamemodeKey) {
-  if (isTesterMember(interaction)) return 0;
-  return waitlistCooldownRemaining(interaction.user.id, gamemodeKey);
-}
+const { removeByChannel, pruneMissing } = require("./activeTests");
 
 function formatDuration(ms) {
   const days = Math.floor(ms / (24 * 60 * 60 * 1000));
@@ -133,6 +125,8 @@ async function refreshQueuePanel(guild, gm) {
   const state = getQueueState(gm.key);
   if (!state?.open || !state.messageId || !state.channelId) return;
 
+  pruneMissing(guild, gm.key); // active tests whose ticket channel no longer exists
+
   try {
     const channel = await guild.channels.fetch(state.channelId);
     const message = await channel.messages.fetch(state.messageId);
@@ -153,6 +147,13 @@ async function handleWaitlistSelect(interaction) {
     return interaction.reply({ content: "❌ Unknown gamemode.", ephemeral: true });
   }
 
+  // Dropdown ko reset karo taaki selected option (jaise "Sword PvP") panel par
+  // dikhta na rahe. Message ko same components ke saath edit karne se Discord
+  // selection hata deta hai. await nahi kiya taaki modal 3 second ke andar khul jaye.
+  interaction.message
+    .edit({ components: interaction.message.components })
+    .catch((err) => console.error("[waitlist select] Failed to reset dropdown:", err.message));
+
   // FIX: queue role HAMESHA do jaise hi gamemode select ho — queue closed ho,
   // cooldown ho, ya modal submit na bhi ho. Isse player queue channel dekh
   // sakta hai. await nahi kiya taaki modal 3 second ke andar khul jaye.
@@ -160,10 +161,11 @@ async function handleWaitlistSelect(interaction) {
 
   // A dedicated /setup queue panel exists and is closed for this
   // gamemode — join nahi hoga, par role + channel link mil jayega.
+  // (First line "queue is currently closed" hata di gayi hai.)
   const state = getQueueState(gm.key);
   if (state && !state.open) {
     return interaction.reply({
-      content: `❌ The **${gm.name}** queue is currently closed. You'll be notified when it opens.\n✅ You've been given the **${gm.name}** queue role so you can see the queue channel.${queueChannelNote(gm)}`,
+      content: `✅ You've been given the **${gm.name}** queue role so you can see the queue channel.${queueChannelNote(gm)}`,
       ephemeral: true,
     });
   }
@@ -176,7 +178,7 @@ async function handleWaitlistSelect(interaction) {
     });
   }
 
-  const remaining = cooldownRemainingFor(interaction, gamemodeKey);
+  const remaining = waitlistCooldownRemaining(interaction.user.id, gamemodeKey);
   if (remaining > 0) {
     return interaction.reply({
       content: `⏳ You're on cooldown for **${gm.name}**. Try again in **${formatDuration(remaining)}**.${queueChannelNote(gm)}`,
@@ -211,7 +213,7 @@ async function handleQueueJoinButton(interaction, gamemodeKey) {
     });
   }
 
-  const remaining = cooldownRemainingFor(interaction, gamemodeKey);
+  const remaining = waitlistCooldownRemaining(interaction.user.id, gamemodeKey);
   if (remaining > 0) {
     return interaction.reply({
       content: `⏳ You're on cooldown for **${gm.name}**. Try again in **${formatDuration(remaining)}**.`,
@@ -304,7 +306,7 @@ async function handleWaitlistModal(interaction, gamemodeKey) {
   }
 
   // Re-check cooldown in case of a race between select and modal submit.
-  const remaining = cooldownRemainingFor(interaction, gamemodeKey);
+  const remaining = waitlistCooldownRemaining(interaction.user.id, gamemodeKey);
   if (remaining > 0) {
     return interaction.reply({
       content: `⏳ You're on cooldown for **${gm.name}**. Try again in **${formatDuration(remaining)}**.${queueChannelNote(gm)}`,
@@ -314,15 +316,11 @@ async function handleWaitlistModal(interaction, gamemodeKey) {
 
   joinWaitlist(interaction.user.id, gamemodeKey, { region, username });
 
-  // Region player profile me bhi save karo, taaki /result embed me dikha sakein
-  // (waitlist entry /pull par delete ho jati hai).
-  upsertPlayer(interaction.user.id, { region });
-
   const roleNote = await assignQueueRole(interaction, gm);
   await refreshQueuePanel(interaction.guild, gm);
 
   return interaction.reply({
-    content: `✅ Joined the **${gm.name}** waitlist!\n**Region:** ${region}\n**Username:** ${username}\n\nA tester will reach out when it's your turn. You can rejoin this waitlist again in 7 days.${queueChannelNote(gm)}${roleNote}`,
+    content: `✅ Joined the **${gm.name}** waitlist!\n**Region:** ${region}\n**Username:** ${username}\n\nA tester will reach out when it's your turn. After your test is done, you can rejoin this gamemode's waitlist in 12 hours.${queueChannelNote(gm)}${roleNote}`,
     ephemeral: true,
   });
 }
@@ -380,31 +378,18 @@ async function handleTicketCloseButton(interaction) {
 
   await interaction.reply(`🔒 Ticket closed by <@${interaction.user.id}>. This channel will be deleted shortly.`);
 
+  // Test is finished: remove it from the queue panel's "Active Tests" list.
+  const ended = removeByChannel(interaction.channelId);
+  if (ended) {
+    const endedGm = gamemodeByKey(ended.gamemode);
+    if (endedGm) refreshQueuePanel(interaction.guild, endedGm).catch(() => {});
+  }
+
   setTimeout(() => {
     interaction.channel.delete().catch((err) => {
       console.error("[ticket close] Failed to delete channel:", err.message);
     });
   }, 5000);
-}
-
-// Ruleset panel (/ruleset) ka gamemode button — us gamemode ke allowed/banned
-// mods sirf click karne wale ko dikhte hain.
-async function handleRulesetButton(interaction, gamemodeKey) {
-  const gm = gamemodeByKey(gamemodeKey);
-  if (!gm) {
-    return interaction.reply({ content: "❌ Unknown gamemode.", ephemeral: true });
-  }
-  return interaction.reply({ embeds: [rulesetEmbed(gm)], ephemeral: true });
-}
-
-// Rubrics panel (/rubrics) ka gamemode button — us gamemode ke testing rubrics
-// sirf click karne wale ko dikhte hain.
-async function handleRubricButton(interaction, gamemodeKey) {
-  const gm = gamemodeByKey(gamemodeKey);
-  if (!gm) {
-    return interaction.reply({ content: "❌ Unknown gamemode.", ephemeral: true });
-  }
-  return interaction.reply({ embeds: [rubricEmbed(gm)], ephemeral: true });
 }
 
 async function handlePanelInteraction(interaction) {
@@ -424,16 +409,6 @@ async function handlePanelInteraction(interaction) {
   if (interaction.isButton() && interaction.customId.startsWith(QUEUE_LEAVE_PREFIX)) {
     const gamemodeKey = interaction.customId.slice(QUEUE_LEAVE_PREFIX.length);
     return handleQueueLeaveButton(interaction, gamemodeKey);
-  }
-
-  if (interaction.isButton() && interaction.customId.startsWith(RULESET_BUTTON_PREFIX)) {
-    const gamemodeKey = interaction.customId.slice(RULESET_BUTTON_PREFIX.length);
-    return handleRulesetButton(interaction, gamemodeKey);
-  }
-
-  if (interaction.isButton() && interaction.customId.startsWith(RUBRIC_BUTTON_PREFIX)) {
-    const gamemodeKey = interaction.customId.slice(RUBRIC_BUTTON_PREFIX.length);
-    return handleRubricButton(interaction, gamemodeKey);
   }
 
   if (interaction.isButton() && interaction.customId === TICKET_CLOSE_BUTTON_ID) {
