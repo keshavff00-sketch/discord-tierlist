@@ -9,6 +9,7 @@ const {
 } = require("../config");
 const { totalPoints } = require("../database");
 const { headUrl, skinRenderUrl } = require("./mojang");
+const { activeTestsFor } = require("./activeTests");
 
 // ---------------- Emoji helpers ----------------
 // Developer Portal -> Emojis me jo naam aur ID hai wahi yaha hona chahiye.
@@ -199,7 +200,7 @@ function setupPanelEmbed() {
         "Click the **Register / Update Profile** button to set your in-game details.",
         "",
         "**Step 2: Join a Gamemode Waitlist**",
-        "After registering, pick a gamemode from the dropdown below to join its waitlist. Each gamemode has a **7-day cooldown**.",
+        "After registering, pick a gamemode from the dropdown below to join its waitlist. Each gamemode has a **12-hour cooldown** after your test.",
         "",
         "• **Region:** The server region you wish to test on (`NA`, `EU`, `AS/AU`).",
         "• **Username:** The name of the account you will be testing on.",
@@ -312,6 +313,16 @@ function queueOpenEmbed(gm, state, entries) {
     )
     .setFooter({ text: BRAND })
     .setTimestamp();
+
+  // NEW: "Active Tests" — players a tester has pulled and is testing right now.
+  // The section only shows up while at least one test is running.
+  const active = activeTestsFor(gm.key);
+  if (active.length) {
+    const shownActive = active.slice(0, 10);
+    const lines = shownActive.map((t, i) => `${i + 1}. <@${t.playerId}> is being tested by <@${t.testerId}>`);
+    const more = active.length > shownActive.length ? `\n_+${active.length - shownActive.length} more_` : "";
+    embed.addFields({ name: "🔨 Active Tests:", value: `${lines.join("\n")}${more}` });
+  }
 
   if (!USE_CUSTOM_EMOJI_IN_TEXT) embed.setAuthor({ name: gm.name, iconURL: gmIconUrl(gm) });
 
