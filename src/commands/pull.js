@@ -23,6 +23,7 @@ const {
 const { ticketEmbed } = require("../utils/embeds");
 const { removeQueueRole, refreshQueuePanel } = require("../utils/panelHandlers");
 const { TICKET_CLOSE_BUTTON_ID } = require("../utils/panelIds");
+const { addActiveTest } = require("../utils/activeTests");
 
 // Attached to the ticket message so the embed's image can reference it
 // as "attachment://logo.png" (same pattern as the /setup panels).
@@ -150,6 +151,17 @@ module.exports = {
         }). They've been removed from the queue — you may want to message them directly.`
       );
     }
+
+    // NEW: mark this test as "active" and show it on the queue panel
+    // ("@Player is being tested by @Tester"). It is removed again when
+    // the ticket is closed (see handleTicketCloseButton in panelHandlers.js).
+    addActiveTest({
+      gamemode: gm.key,
+      playerId: discordId,
+      testerId: interaction.user.id,
+      channelId: ticketChannel.id,
+    });
+    await refreshQueuePanel(interaction.guild, gm);
 
     await ticketChannel.send({
       content: `<@${interaction.user.id}> <@${discordId}> — new ${gm.name} test ticket.`,
