@@ -6,28 +6,15 @@ const {
   TITLES,
   titleForPoints,
   gamemodeByKey,
+  EMOJI,
 } = require("../config");
 const { totalPoints } = require("../database");
 const { headUrl, skinRenderUrl } = require("./mojang");
 const { activeTestsFor } = require("./activeTests");
 
 // ---------------- Emoji helpers ----------------
-// Developer Portal -> Emojis me jo naam aur ID hai wahi yaha hona chahiye.
-// NOTE: config.js ke EMOJI block se bhi ye same rakhna (dono jagah).
-const EMOJIS = {
-  CRYSTAL: { name: "crystal", id: "1561240865299497042", fallback: "💎" },
-  SWORD: { name: "sword", id: "1561240869800255599", fallback: "⚔️" },
-  AXE: { name: "axe", id: "1561240867518554142", fallback: "🪓" },
-  MACE: { name: "MACE1", id: "1561240863085170769", fallback: "🔨" },
-  POT: { name: "DiaPot", id: "1561240876112552026", fallback: "🧪" },
-  NETHPOT: { name: "nethpot", id: "1561240871993606254", fallback: "🔥" },
-  UHC: { name: "UHC", id: "1561240874166263979", fallback: "❤️" },
-  SMP: { name: "SMP", id: "1561240880562708622", fallback: "🌍" },
-  // Naye gamemodes (pehle yaha missing the, isliye queue embed me 🎮 dikhta tha)
-  CART: { name: "cart", id: "1561240878402633768", fallback: "🧨" },
-  SPEARMACE: { name: "spear", id: "1565018776049815583", fallback: "🔱" },
-  DIASMP: { name: "diasmp", id: "1565018798959104130", fallback: "💠" },
-};
+// Emoji IDs ab sirf config.js ke EMOJI block me badalni hain (ek hi jagah).
+const EMOJIS = EMOJI;
 
 // true  = embed text me custom emoji
 // false = normal emoji + queue panel me emoji ki image (agar custom text me na dikhe)
@@ -44,13 +31,14 @@ function emojiFor(gmOrKey) {
   const key = String(gmOrKey?.key || gmOrKey).toUpperCase();
   const e = EMOJIS[key];
   if (!e) return "🎮";
-  return USE_CUSTOM_EMOJI_IN_TEXT ? `<:${e.name}:${e.id}>` : e.fallback;
+  // ID khali ho ya USE_CUSTOM_EMOJI_IN_TEXT=false ho toh normal emoji
+  return USE_CUSTOM_EMOJI_IN_TEXT && e.id ? `<:${e.name}:${e.id}>` : e.fallback;
 }
 
 // Emoji ki image ka URL (author icon ke liye)
 function gmIconUrl(gm) {
   const e = EMOJIS[String(gm?.key).toUpperCase()];
-  return e ? `https://cdn.discordapp.com/emojis/${e.id}.png?size=64` : undefined;
+  return e?.id ? `https://cdn.discordapp.com/emojis/${e.id}.png?size=64` : undefined;
 }
 
 // Text me kahin bhi purana/galat custom emoji ho toh sahi wale se badal deta hai
