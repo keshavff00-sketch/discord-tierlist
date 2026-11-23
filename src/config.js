@@ -58,23 +58,24 @@ const ALLOW_CRACKED_ACCOUNTS =
 
 // ------------------------------------------------------------
 // Bot ke uploaded emojis (Developer Portal -> Emojis).
-// "name" aur "id" bilkul wahi hone chahiye jo portal me dikhta hai.
+// IDs yahi ek jagah badalni hain — utils/embeds.js bhi yahin se padhta hai.
+// Emoji sirf ID se dikhta hai, "name" sirf yaad rakhne ke liye hai.
 // ID khali ("") ho toh fallback (normal emoji) use hoga.
 // ------------------------------------------------------------
 const EMOJI = {
-  CRYSTAL:   { name: "crystal",   id: "1561240865299497042", fallback: "💎" },
-  SWORD:     { name: "sword",     id: "1561240869800255599", fallback: "⚔️" },
-  AXE:       { name: "axe",       id: "1561240867518554142", fallback: "🪓" },
-  MACE:      { name: "MACE1",     id: "1561240863085170769", fallback: "🔨" },
-  POT:       { name: "DiaPot",    id: "1561240876112552026", fallback: "🧪" },
-  NETHPOT:   { name: "nethpot",   id: "1561240871993606254", fallback: "🔥" },
-  UHC:       { name: "UHC",       id: "1561240874166263979", fallback: "❤️" },
-  SMP:       { name: "SMP",       id: "1561240880562708622", fallback: "🌍" },
-  CART:      { name: "cart",      id: "1561240878402633768", fallback: "🧨" },
-  // Spear Mace aur Dia SMP ke emojis Developer Portal me upload karke
-  // yaha "id" bhar dena. Tab tak fallback emoji dikhega.
-  SPEARMACE: { name: "spear",     id: "1565018776049815583", fallback: "🔱" },
-  DIASMP:    { name: "diasmp",    id: "1565018798959104130", fallback: "💠" },
+  CRYSTAL:   { name: "crystal",   id: "1574043163398770809", fallback: "💎" },
+  SWORD:     { name: "sword",     id: "1574043154997452840", fallback: "⚔️" },
+  AXE:       { name: "axe",       id: "1574043157648252938", fallback: "🪓" },
+  MACE:      { name: "MACE1",     id: "1574043166150234213", fallback: "🔨" },
+  POT:       { name: "DiaPot",    id: "1574043774206607461", fallback: "🧪" },
+  NETHPOT:   { name: "nethpot",   id: "1574043169081794600", fallback: "🔥" },
+  UHC:       { name: "UHC",       id: "1574044243465605131", fallback: "❤️" },
+  SMP:       { name: "SMP",       id: "1574043171875197050", fallback: "🌍" },
+  CART:      { name: "cart",      id: "1574043160626077736", fallback: "🧨" },
+  SPEARMACE: { name: "spear",     id: "1574043174446440598", fallback: "🔱" },
+  // Dia SMP ka emoji Developer Portal me upload karke yaha "id" bhar dena.
+  // Tab tak normal emoji (💠) dikhega.
+  DIASMP:    { name: "diasmp",    id: "",                    fallback: "💠" },
 };
 
 function emojiFor(key) {
@@ -215,6 +216,7 @@ module.exports = {
   TESTER_ROLE_ID,
   TRIAL_TESTER_ROLE_ID,
   ALLOW_CRACKED_ACCOUNTS,
+  EMOJI,
   GAMEMODES,
   GAMEMODE_KEYS,
   REGIONS,
