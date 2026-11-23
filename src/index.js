@@ -7,6 +7,7 @@ const fs = require("fs");
 const path = require("path");
 const {
   Client,
+  Events,
   GatewayIntentBits,
   Partials,
   Collection,
@@ -71,7 +72,9 @@ async function registerCommands() {
   console.log(`✅ Auto-registered ${body.length} commands${GUILD_ID ? ` to guild ${GUILD_ID}` : " globally"}.`);
 }
 
-client.once("clientReady", async () => {
+// Events.ClientReady = "ready" on older discord.js 14.x and "clientReady" on newer ones,
+// so this works whichever version npm installs.
+client.once(Events.ClientReady, async () => {
   console.log(`✅ ${BRAND} is online as ${client.user.tag}`);
   client.user.setActivity("Minecraft PvP tests | /help");
 
@@ -82,7 +85,7 @@ client.once("clientReady", async () => {
   }
 });
 
-client.on("interactionCreate", async (interaction) => {
+client.on(Events.InteractionCreate, async (interaction) => {
   try {
     if (interaction.isChatInputCommand()) {
       const command = client.commands.get(interaction.commandName);
@@ -91,20 +94,32 @@ client.on("interactionCreate", async (interaction) => {
       return;
     }
 
+    let handled = false;
+
     // Select menus / buttons from the /setup application panel
     // (Staff/Tester application picker, and Accept/Deny review buttons).
     if (interaction.isStringSelectMenu() || interaction.isButton()) {
-      const handled = await handleApplicationInteraction(interaction);
-      if (handled) return;
+      handled = Boolean(await handleApplicationInteraction(interaction));
     }
 
     // Buttons, select menus, and modals from the /setup panel (waitlist).
     if (
-      interaction.isButton() ||
-      interaction.isStringSelectMenu() ||
-      interaction.isModalSubmit()
+      !handled &&
+      (interaction.isButton() || interaction.isStringSelectMenu() || interaction.isModalSubmit())
     ) {
-      await handlePanelInteraction(interaction);
+      const result = await handlePanelInteraction(interaction);
+      handled = result !== false;
+    }
+
+    // Nothing answered this click -> Discord will show "This interaction failed".
+    // The log tells you exactly which button/menu it was, so it can be fixed.
+    // (Panels that use a collector in their own command will also show up here; that's harmless.)
+    if (!handled && interaction.isMessageComponent()) {
+      console.warn(
+        `[interaction] No handler for customId "${interaction.customId}" ` +
+          `(message ${interaction.message?.id}, channel ${interaction.channelId}). ` +
+          `If this panel is old, post it again.`
+      );
     }
   } catch (err) {
     console.error(`Error handling interaction:`, err);
@@ -123,5 +138,7 @@ client.on("interactionCreate", async (interaction) => {
     }
   }
 });
+
+process.on("unhandledRejection", (err) => console.error("[unhandledRejection]", err));
 
 client.login(process.env.DISCORD_TOKEN);
