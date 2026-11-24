@@ -8,6 +8,7 @@
 const { SlashCommandBuilder, MessageFlags, PermissionFlagsBits } = require("discord.js");
 const { isAdmin } = require("../database");
 const { GAMEMODES, EMOJI } = require("../config");
+const { queueClosedEmbed } = require("../utils/embeds");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -15,19 +16,22 @@ module.exports = {
     .setDescription("[Admin] Check why the custom gamemode emojis aren't showing."),
 
   async execute(interaction) {
-        const id = interaction.user.id;
+    // Allowed: bot admins (testers.json / ADMIN_USER_IDS), Discord Administrators, or the server owner.
+    const id = interaction.user.id;
     const allowed =
       isAdmin(id) ||
       interaction.memberPermissions?.has(PermissionFlagsBits.Administrator) ||
       interaction.guild?.ownerId === id;
 
     if (!allowed) {
+      // Tell the user exactly why, so the fix is obvious.
       const envIds = (process.env.ADMIN_USER_IDS || "").split(",").map((s) => s.trim()).filter(Boolean);
       return interaction.reply({
         content:
-          `❌ Only admins can use this.\nYour Discord ID: \`${id}\`\n` +
-          `ADMIN_USER_IDS has **${envIds.length}** ID(s)` +
-          (envIds.length ? (envIds.includes(id) ? " and yours IS in it." : " but yours is NOT in it.") : " (empty or missing)."),
+          `❌ Only admins can use this.\n` +
+          `Your Discord ID: \`${id}\`\n` +
+          `ADMIN_USER_IDS in Railway has **${envIds.length}** ID(s)` +
+          (envIds.length ? (envIds.includes(id) ? " and yours IS in it." : " but yours is NOT in it.") : " — the variable is empty or missing, or the new code isn't deployed yet."),
         flags: MessageFlags.Ephemeral,
       });
     }
@@ -66,6 +70,24 @@ module.exports = {
     });
 
     await interaction.editReply([...header, ...lines].join("\n").slice(0, 1990));
+
+    // Show what the REAL queue panel code produces right now (uses utils/embeds.js).
+    try {
+      const sample = ["CRYSTAL", "SWORD", "DIASMP"].map((k) => GAMEMODES.find((g) => g.key === k)).filter(Boolean);
+      const embeds = sample.map((gm) => queueClosedEmbed(gm, { closedAt: Date.now() }));
+      const raw = embeds.map((e) => e.data.description.split("\n")[0]).join("\n");
+      await interaction.followUp({
+        content:
+          "**What the queue panel code produces right now:**\n" +
+          `\`\`\`\n${raw}\n\`\`\`\n` +
+          "Emoji IDs starting with `1574` = new (correct). Starting with `1561` or `1565` = old `embeds.js` still deployed.\n" +
+          "If the emojis show in the previews below, the code is fine and your OLD panel just needs to be refreshed.",
+        embeds,
+        flags: MessageFlags.Ephemeral,
+      });
+    } catch (err) {
+      await interaction.followUp({ content: `⚠️ Couldn't build the panel preview: ${err.message}`, flags: MessageFlags.Ephemeral });
+    }
 
     if (appEmojis?.size) {
       const list = [...appEmojis.values()].map((e) => `${e.name} — ${e.id}`).join("\n");
