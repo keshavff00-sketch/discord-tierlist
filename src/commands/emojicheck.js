@@ -5,7 +5,7 @@
 //  - what do the emojis look like when the bot sends them?
 // ============================================================
 
-const { SlashCommandBuilder, MessageFlags } = require("discord.js");
+const { SlashCommandBuilder, MessageFlags, PermissionFlagsBits } = require("discord.js");
 const { isAdmin } = require("../database");
 const { GAMEMODES, EMOJI } = require("../config");
 
@@ -15,8 +15,21 @@ module.exports = {
     .setDescription("[Admin] Check why the custom gamemode emojis aren't showing."),
 
   async execute(interaction) {
-    if (!isAdmin(interaction.user.id)) {
-      return interaction.reply({ content: "❌ Only admins can use this.", flags: MessageFlags.Ephemeral });
+        const id = interaction.user.id;
+    const allowed =
+      isAdmin(id) ||
+      interaction.memberPermissions?.has(PermissionFlagsBits.Administrator) ||
+      interaction.guild?.ownerId === id;
+
+    if (!allowed) {
+      const envIds = (process.env.ADMIN_USER_IDS || "").split(",").map((s) => s.trim()).filter(Boolean);
+      return interaction.reply({
+        content:
+          `❌ Only admins can use this.\nYour Discord ID: \`${id}\`\n` +
+          `ADMIN_USER_IDS has **${envIds.length}** ID(s)` +
+          (envIds.length ? (envIds.includes(id) ? " and yours IS in it." : " but yours is NOT in it.") : " (empty or missing)."),
+        flags: MessageFlags.Ephemeral,
+      });
     }
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
