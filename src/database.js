@@ -310,13 +310,21 @@ function getStaff() {
   return readJSON(TESTERS_FILE);
 }
 
+// ADMIN_USER_IDS (Railway variable, comma separated Discord user IDs) ALWAYS count as admins,
+// even when testers.json is empty or was wiped. Example: ADMIN_USER_IDS=123456789012345678,987654321098765432
+function envAdmins() {
+  return (process.env.ADMIN_USER_IDS || "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+}
+
 function isAdmin(discordId) {
-  return getStaff().admins.includes(discordId);
+  return envAdmins().includes(discordId) || getStaff().admins.includes(discordId);
 }
 
 function isTester(discordId) {
-  const staff = getStaff();
-  return staff.testers.includes(discordId) || staff.admins.includes(discordId);
+  return isAdmin(discordId) || getStaff().testers.includes(discordId);
 }
 
 function addTester(discordId) {
